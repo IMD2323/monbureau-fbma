@@ -1,0 +1,446 @@
+﻿<!--  DashboardPage.xaml - FINAL: Use standard Page in XAML  -->
+<Page
+    x:Class="MonBureau.UI.Views.Pages.DashboardPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="clr-namespace:MonBureau.UI.Converters"
+    xmlns:enums="clr-namespace:MonBureau.Core.Enums;assembly=MonBureau.Core"
+    Background="{StaticResource BackgroundBrush}">
+
+    <Page.Resources>
+        <FontFamily x:Key="IconFont">Segoe MDL2 Assets</FontFamily>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVis" />
+        <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
+        <converters:CaseStatusToStringConverter x:Key="StatusToString" />
+    </Page.Resources>
+
+    <Grid>
+        <!--  Loading Overlay  -->
+        <Border
+            Panel.ZIndex="999"
+            Background="#80000000"
+            Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <ProgressBar
+                    Width="200"
+                    Height="4"
+                    Foreground="{StaticResource PrimaryBrush}"
+                    IsIndeterminate="True" />
+                <TextBlock
+                    Margin="0,16,0,0"
+                    HorizontalAlignment="Center"
+                    FontSize="14"
+                    Foreground="White"
+                    Text="Chargement..." />
+            </StackPanel>
+        </Border>
+
+        <!--  Main Content  -->
+        <ScrollViewer Padding="30" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!--  Header  -->
+                <Grid Margin="0,0,0,32">
+                    <StackPanel>
+                        <TextBlock
+                            FontSize="32"
+                            FontWeight="Bold"
+                            Foreground="{StaticResource TextPrimaryBrush}"
+                            Text="📊 Tableau de Bord" />
+                        <TextBlock
+                            Margin="0,4,0,0"
+                            FontSize="14"
+                            Foreground="{StaticResource TextSecondaryBrush}"
+                            Text="Vue d'ensemble de votre cabinet" />
+                    </StackPanel>
+                </Grid>
+
+                <!--  Statistics Cards  -->
+                <Grid Margin="0,0,0,32">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!--  Total Clients  -->
+                    <Border
+                        Grid.Column="0"
+                        Margin="0,0,16,0"
+                        Padding="24"
+                        Background="{StaticResource PrimaryBrush}"
+                        CornerRadius="16">
+                        <StackPanel>
+                            <TextBlock
+                                FontSize="14"
+                                FontWeight="Medium"
+                                Foreground="White"
+                                Opacity="0.9"
+                                Text="Total Clients" />
+                            <TextBlock
+                                Margin="0,12,0,0"
+                                FontSize="36"
+                                FontWeight="Bold"
+                                Foreground="White"
+                                Text="{Binding TotalClients}" />
+                            <TextBlock
+                                Margin="0,8,0,0"
+                                FontFamily="{StaticResource IconFont}"
+                                FontSize="24"
+                                Foreground="White"
+                                Opacity="0.5"
+                                Text="&#xE716;" />
+                        </StackPanel>
+                    </Border>
+
+                    <!--  Total Cases  -->
+                    <Border
+                        Grid.Column="1"
+                        Margin="0,0,16,0"
+                        Padding="24"
+                        Background="#10B981"
+                        CornerRadius="16">
+                        <StackPanel>
+                            <TextBlock
+                                FontSize="14"
+                                FontWeight="Medium"
+                                Foreground="White"
+                                Opacity="0.9"
+                                Text="Total Dossiers" />
+                            <TextBlock
+                                Margin="0,12,0,0"
+                                FontSize="36"
+                                FontWeight="Bold"
+                                Foreground="White"
+                                Text="{Binding TotalCases}" />
+                            <TextBlock
+                                Margin="0,8,0,0"
+                                FontFamily="{StaticResource IconFont}"
+                                FontSize="24"
+                                Foreground="White"
+                                Opacity="0.5"
+                                Text="&#xE8F1;" />
+                        </StackPanel>
+                    </Border>
+
+                    <!--  Open Cases  -->
+                    <Border
+                        Grid.Column="2"
+                        Padding="24"
+                        Background="#F59E0B"
+                        CornerRadius="16">
+                        <StackPanel>
+                            <TextBlock
+                                FontSize="14"
+                                FontWeight="Medium"
+                                Foreground="White"
+                                Opacity="0.9"
+                                Text="Dossiers Ouverts" />
+                            <TextBlock
+                                Margin="0,12,0,0"
+                                FontSize="36"
+                                FontWeight="Bold"
+                                Foreground="White"
+                                Text="{Binding OpenCases}" />
+                            <TextBlock
+                                Margin="0,8,0,0"
+                                FontFamily="{StaticResource IconFont}"
+                                FontSize="24"
+                                Foreground="White"
+                                Opacity="0.5"
+                                Text="&#xE7C3;" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!--  Quick Actions  -->
+                <Border Margin="0,0,0,32" Style="{StaticResource Card}">
+                    <Grid>
+                        <TextBlock
+                            Margin="0,0,0,20"
+                            FontSize="18"
+                            FontWeight="SemiBold"
+                            Foreground="{StaticResource TextPrimaryBrush}"
+                            Text="⚡ Actions Rapides" />
+
+                        <StackPanel Margin="0,40,0,0" Orientation="Horizontal">
+                            <Button
+                                Margin="0,0,16,0"
+                                Padding="20,16"
+                                Command="{Binding AddClientCommand}"
+                                Style="{StaticResource ModernButton}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock
+                                        Margin="0,0,8,0"
+                                        FontFamily="{StaticResource IconFont}"
+                                        FontSize="18"
+                                        Text="&#xE710;" />
+                                    <TextBlock Text="Nouveau Client" />
+                                </StackPanel>
+                            </Button>
+
+                            <Button
+                                Margin="0,0,16,0"
+                                Padding="20,16"
+                                Command="{Binding AddCaseCommand}"
+                                Style="{StaticResource ModernButton}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock
+                                        Margin="0,0,8,0"
+                                        FontFamily="{StaticResource IconFont}"
+                                        FontSize="18"
+                                        Text="&#xE710;" />
+                                    <TextBlock Text="Nouveau Dossier" />
+                                </StackPanel>
+                            </Button>
+
+                            <Button
+                                Padding="20,16"
+                                Command="{Binding AddItemCommand}"
+                                Style="{StaticResource OutlineButton}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock
+                                        Margin="0,0,8,0"
+                                        FontFamily="{StaticResource IconFont}"
+                                        FontSize="18"
+                                        Text="&#xE710;" />
+                                    <TextBlock Text="Nouvel Élément" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!--  Recent Activity Grid  -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!--  Recent Clients  -->
+                    <Border
+                        Grid.Column="0"
+                        Margin="0,0,16,0"
+                        Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock
+                                Margin="0,0,0,20"
+                                FontSize="18"
+                                FontWeight="SemiBold"
+                                Foreground="{StaticResource TextPrimaryBrush}"
+                                Text="👥 Clients Récents" />
+
+                            <ItemsControl ItemsSource="{Binding RecentClients}" ScrollViewer.CanContentScroll="True">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border
+                                            Margin="0,0,0,12"
+                                            Padding="16"
+                                            Background="#F9FAFB"
+                                            BorderBrush="{StaticResource BorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="8"
+                                            Cursor="Hand">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+
+                                                <!--  Avatar  -->
+                                                <Border
+                                                    Grid.Column="0"
+                                                    Width="40"
+                                                    Height="40"
+                                                    Margin="0,0,12,0"
+                                                    Background="{StaticResource PrimaryBrush}"
+                                                    CornerRadius="20">
+                                                    <TextBlock
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center"
+                                                        FontSize="16"
+                                                        FontWeight="Bold"
+                                                        Foreground="White"
+                                                        Text="{Binding FirstName, StringFormat={}{0:C1}}" />
+                                                </Border>
+
+                                                <!--  Info  -->
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                    <TextBlock
+                                                        FontSize="14"
+                                                        FontWeight="SemiBold"
+                                                        Foreground="{StaticResource TextPrimaryBrush}"
+                                                        Text="{Binding FullName}" />
+                                                    <TextBlock
+                                                        FontSize="12"
+                                                        Foreground="{StaticResource TextSecondaryBrush}"
+                                                        Text="{Binding ContactEmail}" />
+                                                </StackPanel>
+
+                                                <!--  Actions  -->
+                                                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                                    <Button
+                                                        Margin="4,0"
+                                                        Padding="8"
+                                                        Command="{Binding DataContext.EditClientCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                        CommandParameter="{Binding}"
+                                                        Style="{StaticResource IconButton}">
+                                                        <TextBlock
+                                                            FontFamily="{StaticResource IconFont}"
+                                                            FontSize="14"
+                                                            Foreground="{StaticResource PrimaryBrush}"
+                                                            Text="&#xE70F;" />
+                                                    </Button>
+                                                    <Button
+                                                        Margin="4,0"
+                                                        Padding="8"
+                                                        Command="{Binding DataContext.DeleteClientCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                        CommandParameter="{Binding}"
+                                                        Style="{StaticResource IconButton}">
+                                                        <TextBlock
+                                                            FontFamily="{StaticResource IconFont}"
+                                                            FontSize="14"
+                                                            Foreground="{StaticResource ErrorBrush}"
+                                                            Text="&#xE74D;" />
+                                                    </Button>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <!--  Empty State  -->
+                            <StackPanel
+                                Margin="0,20,0,0"
+                                HorizontalAlignment="Center"
+                                Visibility="{Binding RecentClients.Count, Converter={StaticResource InverseBoolToVis}}">
+                                <TextBlock
+                                    HorizontalAlignment="Center"
+                                    FontSize="32"
+                                    Opacity="0.3"
+                                    Text="👥" />
+                                <TextBlock
+                                    Margin="0,8,0,0"
+                                    HorizontalAlignment="Center"
+                                    FontSize="12"
+                                    Foreground="{StaticResource TextSecondaryBrush}"
+                                    Text="Aucun client récent" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!--  Recent Cases  -->
+                    <Border Grid.Column="1" Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock
+                                Margin="0,0,0,20"
+                                FontSize="18"
+                                FontWeight="SemiBold"
+                                Foreground="{StaticResource TextPrimaryBrush}"
+                                Text="📁 Dossiers Récents" />
+
+                            <ItemsControl ItemsSource="{Binding RecentCases}" ScrollViewer.CanContentScroll="True">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border
+                                            Margin="0,0,0,12"
+                                            Padding="16"
+                                            Background="#F9FAFB"
+                                            BorderBrush="{StaticResource BorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="8"
+                                            Cursor="Hand">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+
+                                                <!--  Info  -->
+                                                <StackPanel Grid.Column="0">
+                                                    <TextBlock
+                                                        FontSize="12"
+                                                        FontWeight="Medium"
+                                                        Foreground="{StaticResource PrimaryBrush}"
+                                                        Text="{Binding Number}" />
+                                                    <TextBlock
+                                                        Margin="0,4,0,4"
+                                                        FontSize="14"
+                                                        FontWeight="SemiBold"
+                                                        Foreground="{StaticResource TextPrimaryBrush}"
+                                                        Text="{Binding Title}" />
+                                                    <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}">
+                                                        <Run Text="Client:" />
+                                                        <Run FontWeight="Medium" Text="{Binding Client.FullName, Mode=OneWay}" />
+                                                    </TextBlock>
+                                                </StackPanel>
+
+                                                <!--  Actions  -->
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                    <Button
+                                                        Margin="4,0"
+                                                        Padding="8"
+                                                        Command="{Binding DataContext.EditCaseCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                        CommandParameter="{Binding}"
+                                                        Style="{StaticResource IconButton}">
+                                                        <TextBlock
+                                                            FontFamily="{StaticResource IconFont}"
+                                                            FontSize="14"
+                                                            Foreground="{StaticResource PrimaryBrush}"
+                                                            Text="&#xE70F;" />
+                                                    </Button>
+                                                    <Button
+                                                        Margin="4,0"
+                                                        Padding="8"
+                                                        Command="{Binding DataContext.DeleteCaseCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                        CommandParameter="{Binding}"
+                                                        Style="{StaticResource IconButton}">
+                                                        <TextBlock
+                                                            FontFamily="{StaticResource IconFont}"
+                                                            FontSize="14"
+                                                            Foreground="{StaticResource ErrorBrush}"
+                                                            Text="&#xE74D;" />
+                                                    </Button>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <!--  Empty State  -->
+                            <StackPanel
+                                Margin="0,20,0,0"
+                                HorizontalAlignment="Center"
+                                Visibility="{Binding RecentCases.Count, Converter={StaticResource InverseBoolToVis}}">
+                                <TextBlock
+                                    HorizontalAlignment="Center"
+                                    FontSize="32"
+                                    Opacity="0.3"
+                                    Text="📁" />
+                                <TextBlock
+                                    Margin="0,8,0,0"
+                                    HorizontalAlignment="Center"
+                                    FontSize="12"
+                                    Foreground="{StaticResource TextSecondaryBrush}"
+                                    Text="Aucun dossier récent" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

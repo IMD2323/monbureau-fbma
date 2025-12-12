@@ -1,0 +1,234 @@
+﻿<Page
+    x:Class="MonBureau.UI.Views.Pages.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Background="{StaticResource BackgroundBrush}">
+
+    <ScrollViewer Padding="30" VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+            <!--  Header  -->
+            <Grid Margin="0,0,0,32">
+                <StackPanel>
+                    <TextBlock
+                        FontSize="28"
+                        FontWeight="Bold"
+                        Foreground="{StaticResource TextPrimaryBrush}"
+                        Text="⚙️ Paramètres" />
+                    <TextBlock
+                        FontSize="14"
+                        Foreground="{StaticResource TextSecondaryBrush}"
+                        Text="Configuration de l'application" />
+                </StackPanel>
+
+                <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                    <Button
+                        Margin="0,0,8,0"
+                        Padding="16,10"
+                        Command="{Binding ExportSettingsCommand}"
+                        Style="{StaticResource OutlineButton}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock
+                                Margin="0,0,8,0"
+                                FontFamily="Segoe MDL2 Assets"
+                                Text="&#xE72D;" />
+                            <TextBlock Text="Exporter" />
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        Padding="16,10"
+                        Command="{Binding ImportSettingsCommand}"
+                        Style="{StaticResource OutlineButton}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock
+                                Margin="0,0,8,0"
+                                FontFamily="Segoe MDL2 Assets"
+                                Text="&#xE8B5;" />
+                            <TextBlock Text="Importer" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <!--  Office Information  -->
+            <Border Margin="0,0,0,24" Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock
+                        Margin="0,0,0,20"
+                        FontSize="18"
+                        FontWeight="SemiBold"
+                        Text="🏢 Informations du Cabinet" />
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="16" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <!--  Office Name  -->
+                        <StackPanel Grid.Row="0" Grid.Column="0">
+                            <TextBlock
+                                Margin="0,0,0,8"
+                                FontSize="13"
+                                Text="Nom du Cabinet" />
+                            <TextBox Style="{StaticResource ModernTextBox}" Text="{Binding OfficeName, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+
+                        <!--  Office Phone  -->
+                        <StackPanel Grid.Row="0" Grid.Column="2">
+                            <TextBlock
+                                Margin="0,0,0,8"
+                                FontSize="13"
+                                Text="Téléphone" />
+                            <TextBox Style="{StaticResource ModernTextBox}" Text="{Binding OfficePhone, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+
+                        <!--  Office Email  -->
+                        <StackPanel
+                            Grid.Row="1"
+                            Grid.Column="0"
+                            Margin="0,16,0,0">
+                            <TextBlock
+                                Margin="0,0,0,8"
+                                FontSize="13"
+                                Text="Email" />
+                            <TextBox Style="{StaticResource ModernTextBox}" Text="{Binding OfficeEmail, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+
+                        <!--  Office Address  -->
+                        <StackPanel
+                            Grid.Row="2"
+                            Grid.Column="0"
+                            Grid.ColumnSpan="3"
+                            Margin="0,16,0,0">
+                            <TextBlock
+                                Margin="0,0,0,8"
+                                FontSize="13"
+                                Text="Adresse" />
+                            <TextBox
+                                MinHeight="80"
+                                AcceptsReturn="True"
+                                Style="{StaticResource ModernTextBox}"
+                                Text="{Binding OfficeAddress, UpdateSourceTrigger=PropertyChanged}"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!--  Default Court Settings  -->
+            <Border Margin="0,0,0,24" Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock
+                        Margin="0,0,0,20"
+                        FontSize="18"
+                        FontWeight="SemiBold"
+                        Text="⚖️ Tribunal par Défaut" />
+
+                    <StackPanel Margin="0,0,0,16">
+                        <TextBlock
+                            Margin="0,0,0,8"
+                            FontSize="13"
+                            Text="Nom du Tribunal" />
+                        <TextBox Style="{StaticResource ModernTextBox}" Text="{Binding DefaultCourtName, UpdateSourceTrigger=PropertyChanged}" />
+                    </StackPanel>
+
+                    <StackPanel>
+                        <TextBlock
+                            Margin="0,0,0,8"
+                            FontSize="13"
+                            Text="Adresse du Tribunal" />
+                        <TextBox
+                            MinHeight="80"
+                            AcceptsReturn="True"
+                            Style="{StaticResource ModernTextBox}"
+                            Text="{Binding DefaultCourtAddress, UpdateSourceTrigger=PropertyChanged}"
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!--  Application Preferences  -->
+            <Border Margin="0,0,0,24" Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock
+                        Margin="0,0,0,20"
+                        FontSize="18"
+                        FontWeight="SemiBold"
+                        Text="🎨 Préférences d'Affichage" />
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="16" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="16" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock
+                                Margin="0,0,0,8"
+                                FontSize="13"
+                                Text="Symbole Monétaire" />
+                            <TextBox Style="{StaticResource ModernTextBox}" Text="{Binding CurrencySymbol, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <TextBlock
+                                Margin="0,0,0,8"
+                                FontSize="13"
+                                Text="Format de Date" />
+                            <TextBox Style="{StaticResource ModernTextBox}" Text="{Binding DateFormat, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="4">
+                            <TextBlock
+                                Margin="0,0,0,8"
+                                FontSize="13"
+                                Text="Éléments par Page" />
+                            <TextBox Style="{StaticResource ModernTextBox}" Text="{Binding DefaultPageSize, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <StackPanel Margin="0,24,0,0">
+                        <CheckBox
+                            Margin="0,0,0,12"
+                            Content="Activer les animations"
+                            IsChecked="{Binding EnableAnimations}" />
+                        <CheckBox Content="Afficher les conseils au démarrage" IsChecked="{Binding ShowTips}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!--  Actions  -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <Button
+                    Grid.Column="1"
+                    Margin="0,0,12,0"
+                    Padding="20,12"
+                    Command="{Binding ResetToDefaultsCommand}"
+                    Content="Réinitialiser"
+                    Style="{StaticResource OutlineButton}" />
+
+                <Button
+                    Grid.Column="2"
+                    Padding="20,12"
+                    Command="{Binding SaveSettingsCommand}"
+                    Content="Enregistrer"
+                    Style="{StaticResource ModernButton}" />
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

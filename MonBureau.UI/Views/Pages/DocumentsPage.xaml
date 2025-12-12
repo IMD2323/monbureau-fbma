@@ -1,0 +1,211 @@
+﻿<!--  DocumentsPage.xaml - Simple document listing by case  -->
+<Page
+    x:Class="MonBureau.UI.Views.Pages.DocumentsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="clr-namespace:MonBureau.UI.Converters"
+    Background="{StaticResource BackgroundBrush}">
+
+    <Page.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVis" />
+        <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
+        <converters:ItemTypeToStringConverter x:Key="ItemTypeToString" />
+        <converters:DateFormatConverter x:Key="DateFormat" />
+    </Page.Resources>
+
+    <Grid>
+        <!--  Loading Overlay  -->
+        <Border
+            Panel.ZIndex="999"
+            Background="#80000000"
+            Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <ProgressBar
+                    Width="200"
+                    Height="4"
+                    Foreground="{StaticResource PrimaryBrush}"
+                    IsIndeterminate="True" />
+                <TextBlock
+                    Margin="0,16,0,0"
+                    HorizontalAlignment="Center"
+                    FontSize="14"
+                    Foreground="White"
+                    Text="Chargement..." />
+            </StackPanel>
+        </Border>
+
+        <!--  Main Content  -->
+        <ScrollViewer
+            Padding="30"
+            HorizontalScrollBarVisibility="Disabled"
+            VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!--  Header  -->
+                <Grid Margin="0,0,0,24">
+                    <StackPanel>
+                        <TextBlock
+                            FontSize="28"
+                            FontWeight="Bold"
+                            Foreground="{StaticResource TextPrimaryBrush}"
+                            Text="📄 Documents" />
+                        <TextBlock
+                            FontSize="14"
+                            Foreground="{StaticResource TextSecondaryBrush}"
+                            Text="Tous les documents des dossiers" />
+                    </StackPanel>
+                </Grid>
+
+                <!--  Search Bar  -->
+                <Border Margin="0,0,0,24" Style="{StaticResource Card}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBox
+                            Grid.Column="0"
+                            Padding="16,12"
+                            FontSize="14"
+                            Style="{StaticResource ModernTextBox}"
+                            Text="{Binding SearchFilter, UpdateSourceTrigger=PropertyChanged}" />
+
+                        <Button
+                            Grid.Column="1"
+                            Margin="12,0,0,0"
+                            Padding="16,12"
+                            Command="{Binding RefreshCommand}"
+                            Style="{StaticResource OutlineButton}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock
+                                    Margin="0,0,8,0"
+                                    FontFamily="Segoe MDL2 Assets"
+                                    Text="&#xE72C;" />
+                                <TextBlock Text="Actualiser" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </Border>
+
+                <!--  Documents List  -->
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock
+                            Margin="0,0,0,20"
+                            FontSize="18"
+                            FontWeight="SemiBold"
+                            Text="{Binding TotalDocuments, StringFormat='📄 {0} Documents'}" />
+
+                        <ItemsControl ItemsSource="{Binding Documents}" ScrollViewer.CanContentScroll="True">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border
+                                        Margin="0,0,0,12"
+                                        Padding="20"
+                                        Background="{StaticResource BackgroundBrush}"
+                                        BorderBrush="{StaticResource BorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="8">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <!--  Icon  -->
+                                            <Border
+                                                Grid.Column="0"
+                                                Width="50"
+                                                Height="50"
+                                                Margin="0,0,16,0"
+                                                Background="{StaticResource PrimaryBrush}"
+                                                CornerRadius="8"
+                                                Opacity="0.1" />
+                                            <TextBlock
+                                                Grid.Column="0"
+                                                Margin="0,0,16,0"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                FontFamily="Segoe MDL2 Assets"
+                                                FontSize="24"
+                                                Foreground="{StaticResource PrimaryBrush}"
+                                                Text="&#xE8A5;" />
+
+                                            <!--  Info  -->
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock
+                                                    Margin="0,0,0,4"
+                                                    FontSize="15"
+                                                    FontWeight="SemiBold"
+                                                    Foreground="{StaticResource TextPrimaryBrush}"
+                                                    Text="{Binding Name}"
+                                                    TextTrimming="CharacterEllipsis" />
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock
+                                                        Margin="0,0,16,0"
+                                                        FontSize="13"
+                                                        Foreground="{StaticResource TextSecondaryBrush}">
+                                                        <Run Text="Dossier:" />
+                                                        <Run FontWeight="Medium" Text="{Binding Case.Number, Mode=OneWay}" />
+                                                    </TextBlock>
+                                                    <TextBlock
+                                                        FontSize="12"
+                                                        Foreground="{StaticResource TextTertiaryBrush}"
+                                                        Text="{Binding Date, Converter={StaticResource DateFormat}, ConverterParameter='dd/MM/yyyy'}" />
+                                                </StackPanel>
+                                                <TextBlock
+                                                    Margin="0,4,0,0"
+                                                    FontSize="12"
+                                                    Foreground="{StaticResource TextTertiaryBrush}"
+                                                    Text="{Binding Description}"
+                                                    TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+
+                                            <!--  Actions  -->
+                                            <Button
+                                                Grid.Column="2"
+                                                Padding="10"
+                                                Command="{Binding DataContext.OpenDocumentCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource IconButton}">
+                                                <TextBlock
+                                                    FontFamily="Segoe MDL2 Assets"
+                                                    FontSize="16"
+                                                    Foreground="{StaticResource PrimaryBrush}"
+                                                    Text="&#xE8A7;" />
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!--  Empty State  -->
+                        <StackPanel
+                            Margin="0,40,0,40"
+                            HorizontalAlignment="Center"
+                            Visibility="{Binding Documents.Count, Converter={StaticResource InverseBoolToVis}}">
+                            <TextBlock
+                                HorizontalAlignment="Center"
+                                FontSize="48"
+                                Opacity="0.3"
+                                Text="📄" />
+                            <TextBlock
+                                Margin="0,12,0,0"
+                                HorizontalAlignment="Center"
+                                FontSize="14"
+                                Foreground="{StaticResource TextSecondaryBrush}"
+                                Text="Aucun document trouvé" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

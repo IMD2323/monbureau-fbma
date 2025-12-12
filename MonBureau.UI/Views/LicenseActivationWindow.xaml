@@ -1,0 +1,275 @@
+﻿<Window
+    x:Class="MonBureau.UI.Views.LicenseActivationWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Activation de Licence"
+    Width="900"
+    Height="600"
+    AllowsTransparency="True"
+    Background="Transparent"
+    ResizeMode="NoResize"
+    WindowStartupLocation="CenterScreen"
+    WindowStyle="None">
+
+    <Border
+        Background="{StaticResource SurfaceBrush}"
+        BorderBrush="{StaticResource BorderBrush}"
+        BorderThickness="1"
+        CornerRadius="20">
+        <Border.Effect>
+            <DropShadowEffect
+                BlurRadius="30"
+                Opacity="0.2"
+                ShadowDepth="0"
+                Color="#000000" />
+        </Border.Effect>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="400" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!--  Left Panel - Branding  -->
+            <Border
+                Grid.Column="0"
+                Background="{StaticResource PrimaryBrush}"
+                CornerRadius="20,0,0,20">
+                <StackPanel
+                    Margin="40"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+                    <Border
+                        Width="100"
+                        Height="100"
+                        Margin="0,0,0,32"
+                        Background="White"
+                        CornerRadius="25"
+                        Opacity="0.95">
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            FontFamily="Segoe MDL2 Assets"
+                            FontSize="50"
+                            Foreground="{StaticResource PrimaryBrush}"
+                            Text="&#xE7C3;" />
+                    </Border>
+
+                    <StackPanel Margin="0,0,0,16">
+                        <TextBlock
+                            Margin="0,0,0,8"
+                            HorizontalAlignment="Center"
+                            FontSize="32"
+                            FontWeight="Bold"
+                            Foreground="White"
+                            Text="MonBureau" />
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            FontSize="15"
+                            Foreground="White"
+                            Opacity="0.9"
+                            Text="Gestion Professionnelle de Cabinet"
+                            TextAlignment="Center" />
+                    </StackPanel>
+
+                    <StackPanel Margin="0,40,0,0">
+                        <StackPanel Margin="0,0,0,20" Orientation="Horizontal">
+                            <TextBlock
+                                Margin="0,0,16,0"
+                                FontSize="20"
+                                FontWeight="Bold"
+                                Foreground="White"
+                                Text="✓" />
+                            <TextBlock
+                                FontSize="14"
+                                Foreground="White"
+                                Opacity="0.9"
+                                Text="Gestion complète des clients" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,20" Orientation="Horizontal">
+                            <TextBlock
+                                Margin="0,0,16,0"
+                                FontSize="20"
+                                FontWeight="Bold"
+                                Foreground="White"
+                                Text="✓" />
+                            <TextBlock
+                                FontSize="14"
+                                Foreground="White"
+                                Opacity="0.9"
+                                Text="Suivi des dossiers juridiques" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,20" Orientation="Horizontal">
+                            <TextBlock
+                                Margin="0,0,16,0"
+                                FontSize="20"
+                                FontWeight="Bold"
+                                Foreground="White"
+                                Text="✓" />
+                            <TextBlock
+                                FontSize="14"
+                                Foreground="White"
+                                Opacity="0.9"
+                                Text="Documents et dépenses" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock
+                                Margin="0,0,16,0"
+                                FontSize="20"
+                                FontWeight="Bold"
+                                Foreground="White"
+                                Text="✓" />
+                            <TextBlock
+                                FontSize="14"
+                                Foreground="White"
+                                Opacity="0.9"
+                                Text="Sauvegardes automatiques" />
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!--  Right Panel - Activation Form  -->
+            <Grid Grid.Column="1" Margin="50">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!--  Header  -->
+                <StackPanel Grid.Row="0">
+                    <TextBlock
+                        Margin="0,0,0,8"
+                        FontSize="28"
+                        FontWeight="Bold"
+                        Foreground="{StaticResource TextPrimaryBrush}"
+                        Text="Activation de la Licence" />
+                    <TextBlock
+                        FontSize="14"
+                        Foreground="{StaticResource TextSecondaryBrush}"
+                        Text="Entrez votre clé de licence pour activer MonBureau" />
+                </StackPanel>
+
+                <!--  Form  -->
+                <StackPanel Grid.Row="1" VerticalAlignment="Center">
+                    <!--  Email  -->
+                    <StackPanel Margin="0,0,0,24">
+                        <TextBlock
+                            Margin="0,0,0,8"
+                            FontSize="13"
+                            FontWeight="SemiBold"
+                            Foreground="{StaticResource TextPrimaryBrush}"
+                            Text="Adresse Email" />
+                        <TextBox
+                            x:Name="EmailTextBox"
+                            Padding="16,12"
+                            FontSize="14"
+                            Style="{StaticResource ModernTextBox}" />
+                    </StackPanel>
+
+                    <!--  License Key  -->
+                    <StackPanel Margin="0,0,0,24">
+                        <TextBlock
+                            Margin="0,0,0,8"
+                            FontSize="13"
+                            FontWeight="SemiBold"
+                            Foreground="{StaticResource TextPrimaryBrush}"
+                            Text="Clé de Licence" />
+                        <TextBox
+                            x:Name="LicenseKeyTextBox"
+                            Margin="0,0,0,8"
+                            Padding="16,12"
+                            CharacterCasing="Upper"
+                            FontSize="14"
+                            Style="{StaticResource ModernTextBox}" />
+                        <TextBlock
+                            FontSize="11"
+                            Foreground="{StaticResource TextTertiaryBrush}"
+                            Text="Format: MB-2025-XXXXX" />
+                    </StackPanel>
+
+                    <!--  Device Info  -->
+                    <Border
+                        Margin="0,0,0,24"
+                        Padding="16"
+                        Background="{StaticResource BackgroundBrush}"
+                        CornerRadius="8">
+                        <StackPanel>
+                            <TextBlock
+                                Margin="0,0,0,8"
+                                FontSize="13"
+                                FontWeight="SemiBold"
+                                Foreground="{StaticResource TextPrimaryBrush}"
+                                Text="ℹ️ Informations de l'Appareil" />
+                            <TextBlock
+                                x:Name="DeviceIdText"
+                                Margin="0,0,0,8"
+                                FontSize="11"
+                                Foreground="{StaticResource TextSecondaryBrush}"
+                                Text="ID Appareil: Calcul en cours..."
+                                TextWrapping="Wrap" />
+                            <TextBlock
+                                FontSize="11"
+                                FontStyle="Italic"
+                                Foreground="{StaticResource TextTertiaryBrush}"
+                                Text="Cette licence sera liée à cet appareil" />
+                        </StackPanel>
+                    </Border>
+
+                    <!--  Status Message  -->
+                    <TextBlock
+                        x:Name="StatusMessage"
+                        Margin="0,0,0,24"
+                        FontSize="13"
+                        Foreground="{StaticResource ErrorBrush}"
+                        TextWrapping="Wrap"
+                        Visibility="Collapsed" />
+
+                    <!--  Buttons  -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Button
+                            Grid.Column="0"
+                            Margin="0,0,8,0"
+                            Padding="16,12"
+                            Click="CancelButton_Click"
+                            Content="Annuler"
+                            Style="{StaticResource OutlineButton}" />
+
+                        <Button
+                            x:Name="ActivateButton"
+                            Grid.Column="1"
+                            Margin="8,0,0,0"
+                            Padding="16,12"
+                            Click="ActivateButton_Click"
+                            Content="Activer"
+                            Style="{StaticResource ModernButton}" />
+                    </Grid>
+                </StackPanel>
+
+                <!--  Footer  -->
+                <StackPanel Grid.Row="2" Margin="0,20,0,0">
+                    <Separator Margin="0,0,0,12" Background="{StaticResource BorderBrush}" />
+                    <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                        <TextBlock
+                            Margin="0,0,8,0"
+                            FontSize="12"
+                            Foreground="{StaticResource TextSecondaryBrush}"
+                            Text="Besoin d'aide ?" />
+                        <TextBlock
+                            Cursor="Hand"
+                            FontSize="12"
+                            Foreground="{StaticResource PrimaryBrush}"
+                            Text="Contactez le support"
+                            TextDecorations="Underline" />
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

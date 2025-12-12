@@ -1,0 +1,353 @@
+﻿<!--  BackupPage.xaml - FIXED: Simplified ComboBox style  -->
+<Page
+    x:Class="MonBureau.UI.Views.Pages.BackupPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="clr-namespace:MonBureau.UI.Converters"
+    Background="{StaticResource BackgroundBrush}">
+
+    <Page.Resources>
+        <FontFamily x:Key="IconFont">Segoe MDL2 Assets</FontFamily>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVis" />
+        <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
+
+        <!--  Simplified ModernComboBox Style  -->
+        <Style x:Key="ModernComboBox" TargetType="ComboBox">
+            <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="12,10,12,10" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="MinHeight" Value="44" />
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <!--  Loading Overlay  -->
+        <Border
+            Panel.ZIndex="999"
+            Background="#80000000"
+            Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVis}}">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <ProgressBar
+                    Width="200"
+                    Height="4"
+                    Foreground="{StaticResource PrimaryBrush}"
+                    IsIndeterminate="True" />
+                <TextBlock
+                    Margin="0,16,0,0"
+                    HorizontalAlignment="Center"
+                    FontSize="14"
+                    Foreground="White"
+                    Text="{Binding StatusMessage}" />
+            </StackPanel>
+        </Border>
+
+        <!--  Main Content  -->
+        <ScrollViewer
+            Padding="30"
+            HorizontalScrollBarVisibility="Disabled"
+            VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!--  Header  -->
+                <Grid Margin="0,0,0,24">
+                    <StackPanel>
+                        <TextBlock
+                            FontSize="28"
+                            FontWeight="Bold"
+                            Foreground="{StaticResource TextPrimaryBrush}"
+                            Text="💾 Sauvegarde &amp; Restauration" />
+                        <TextBlock
+                            FontSize="14"
+                            Foreground="{StaticResource TextSecondaryBrush}"
+                            Text="Gérez vos sauvegardes de données" />
+                    </StackPanel>
+                </Grid>
+
+                <!--  Backup Actions  -->
+                <Border Margin="0,0,0,24" Style="{StaticResource Card}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock
+                                Margin="0,0,0,8"
+                                FontSize="18"
+                                FontWeight="SemiBold"
+                                Text="Actions Rapides" />
+                            <TextBlock
+                                FontSize="13"
+                                Foreground="{StaticResource TextSecondaryBrush}"
+                                Text="Créez ou restaurez une sauvegarde de votre base de données" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <Button
+                                Margin="0,0,8,0"
+                                Padding="20,12"
+                                Command="{Binding CreateBackupCommand}"
+                                Style="{StaticResource ModernButton}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock
+                                        Margin="0,0,8,0"
+                                        FontFamily="{StaticResource IconFont}"
+                                        Text="&#xE74E;" />
+                                    <TextBlock Text="Créer Sauvegarde" />
+                                </StackPanel>
+                            </Button>
+
+                            <Button
+                                Padding="20,12"
+                                Command="{Binding SelectRestoreFileCommand}"
+                                Style="{StaticResource OutlineButton}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock
+                                        Margin="0,0,8,0"
+                                        FontFamily="{StaticResource IconFont}"
+                                        Text="&#xE777;" />
+                                    <TextBlock Text="Restaurer" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!--  Auto-Backup Settings  -->
+                <Border Margin="0,0,0,24" Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock
+                            Margin="0,0,0,20"
+                            FontSize="18"
+                            FontWeight="SemiBold"
+                            Text="⚙️ Sauvegarde Automatique" />
+
+                        <CheckBox
+                            Margin="0,0,0,20"
+                            Content="Activer la sauvegarde automatique"
+                            IsChecked="{Binding AutoBackupEnabled}" />
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="16" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <!--  Backup Interval  -->
+                            <StackPanel Grid.Column="0">
+                                <TextBlock
+                                    Margin="0,0,0,8"
+                                    FontSize="13"
+                                    Text="Intervalle de Sauvegarde" />
+                                <ComboBox SelectedIndex="{Binding SelectedInterval}" Style="{StaticResource ModernComboBox}">
+                                    <ComboBoxItem Content="Toutes les heures (test)" />
+                                    <ComboBoxItem Content="Quotidien" />
+                                    <ComboBoxItem Content="Tous les 3 jours" />
+                                    <ComboBoxItem Content="Hebdomadaire" />
+                                </ComboBox>
+                            </StackPanel>
+
+                            <!--  Max Backup Count  -->
+                            <StackPanel Grid.Column="2">
+                                <TextBlock
+                                    Margin="0,0,0,8"
+                                    FontSize="13"
+                                    Text="Nombre Max de Sauvegardes" />
+                                <TextBox Style="{StaticResource ModernTextBox}" Text="{Binding MaxBackupCount, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <!--  Last Backup Info  -->
+                        <Border
+                            Margin="0,20,0,20"
+                            Padding="16"
+                            Background="{StaticResource BackgroundBrush}"
+                            CornerRadius="8">
+                            <StackPanel>
+                                <TextBlock
+                                    Margin="0,0,0,4"
+                                    FontSize="13"
+                                    FontWeight="SemiBold"
+                                    Text="Dernière Sauvegarde:" />
+                                <TextBlock
+                                    FontSize="12"
+                                    Foreground="{StaticResource TextSecondaryBrush}"
+                                    Text="{Binding LastBackupDate, StringFormat='Le {0:dd/MM/yyyy à HH:mm}'}" />
+                            </StackPanel>
+                        </Border>
+
+                        <!--  Save Settings Button  -->
+                        <Button
+                            Padding="20,12"
+                            HorizontalAlignment="Right"
+                            Command="{Binding SaveAutoBackupSettingsCommand}"
+                            Content="Enregistrer Configuration"
+                            Style="{StaticResource ModernButton}" />
+                    </StackPanel>
+                </Border>
+
+                <!--  Backup History  -->
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,20">
+                            <TextBlock
+                                FontSize="18"
+                                FontWeight="SemiBold"
+                                Text="📂 Historique des Sauvegardes" />
+
+                            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                                <Button
+                                    Margin="0,0,8,0"
+                                    Padding="12,8"
+                                    Command="{Binding RefreshHistoryCommand}"
+                                    Style="{StaticResource IconButton}">
+                                    <TextBlock
+                                        FontFamily="{StaticResource IconFont}"
+                                        FontSize="16"
+                                        Foreground="{StaticResource PrimaryBrush}"
+                                        Text="&#xE72C;" />
+                                </Button>
+
+                                <Button
+                                    Padding="12,8"
+                                    Command="{Binding OpenBackupFolderCommand}"
+                                    Style="{StaticResource IconButton}">
+                                    <TextBlock
+                                        FontFamily="{StaticResource IconFont}"
+                                        FontSize="16"
+                                        Foreground="{StaticResource PrimaryBrush}"
+                                        Text="&#xE8DA;" />
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+
+                        <!--  Backup List  -->
+                        <ItemsControl ItemsSource="{Binding BackupHistory}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border
+                                        Margin="0,0,0,12"
+                                        Padding="16"
+                                        Background="{StaticResource BackgroundBrush}"
+                                        BorderBrush="{StaticResource BorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="8">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <!--  Icon  -->
+                                            <Border
+                                                Grid.Column="0"
+                                                Width="40"
+                                                Height="40"
+                                                Margin="0,0,16,0"
+                                                Background="{StaticResource PrimaryBrush}"
+                                                CornerRadius="8"
+                                                Opacity="0.1" />
+                                            <TextBlock
+                                                Grid.Column="0"
+                                                Margin="0,0,16,0"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                FontFamily="{StaticResource IconFont}"
+                                                FontSize="20"
+                                                Foreground="{StaticResource PrimaryBrush}"
+                                                Text="&#xE896;" />
+
+                                            <!--  Info  -->
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock
+                                                    Margin="0,0,0,4"
+                                                    FontSize="14"
+                                                    FontWeight="SemiBold"
+                                                    Foreground="{StaticResource TextPrimaryBrush}"
+                                                    Text="{Binding FileName}" />
+                                                <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}">
+                                                    <Run Text="{Binding CreatedAt, StringFormat='{}{0:dd/MM/yyyy HH:mm}'}" />
+                                                    <Run Text="•" />
+                                                    <Run Text="{Binding FormattedSize, Mode=OneWay}" />
+
+                                                    <Run Text="•" />
+                                                    <Run Text="{Binding ClientCount}" />
+                                                    <Run Text="clients" />
+                                                    <Run Text="•" />
+                                                    <Run Text="{Binding CaseCount}" />
+                                                    <Run Text="dossiers" />
+                                                </TextBlock>
+                                            </StackPanel>
+
+                                            <!--  Actions  -->
+                                            <StackPanel
+                                                Grid.Column="2"
+                                                VerticalAlignment="Center"
+                                                Orientation="Horizontal">
+                                                <Button
+                                                    Margin="4,0"
+                                                    Padding="10"
+                                                    Command="{Binding DataContext.RestoreBackupCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                    CommandParameter="{Binding FilePath}"
+                                                    Style="{StaticResource IconButton}"
+                                                    ToolTip="Restaurer">
+                                                    <TextBlock
+                                                        FontFamily="{StaticResource IconFont}"
+                                                        FontSize="16"
+                                                        Foreground="{StaticResource SuccessBrush}"
+                                                        Text="&#xE777;" />
+                                                </Button>
+
+                                                <Button
+                                                    Margin="4,0"
+                                                    Padding="10"
+                                                    Command="{Binding DataContext.DeleteBackupCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                    CommandParameter="{Binding FilePath}"
+                                                    Style="{StaticResource IconButton}"
+                                                    ToolTip="Supprimer">
+                                                    <TextBlock
+                                                        FontFamily="{StaticResource IconFont}"
+                                                        FontSize="16"
+                                                        Foreground="{StaticResource ErrorBrush}"
+                                                        Text="&#xE74D;" />
+                                                </Button>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!--  Empty State  -->
+                        <StackPanel
+                            Margin="0,20,0,0"
+                            HorizontalAlignment="Center"
+                            Visibility="{Binding BackupHistory.Count, Converter={StaticResource InverseBoolToVis}}">
+                            <TextBlock
+                                HorizontalAlignment="Center"
+                                FontSize="48"
+                                Opacity="0.3"
+                                Text="💾" />
+                            <TextBlock
+                                Margin="0,12,0,0"
+                                HorizontalAlignment="Center"
+                                FontSize="14"
+                                Foreground="{StaticResource TextSecondaryBrush}"
+                                Text="Aucune sauvegarde disponible" />
+                            <TextBlock
+                                Margin="0,4,0,0"
+                                HorizontalAlignment="Center"
+                                FontSize="12"
+                                Foreground="{StaticResource TextTertiaryBrush}"
+                                Text="Créez votre première sauvegarde pour commencer" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

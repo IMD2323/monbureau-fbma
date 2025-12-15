@@ -367,3 +367,25 @@ monbureau-licenses-firebase-adminsdk
 # Firebase / Google secrets
 *.json
 MonBureau.UI/Config/*.json
+
+# ============================================================================
+# Security - Prevent credential leaks
+# ============================================================================
+**/firebase*adminsdk*.json
+**/serviceAccountKey*.json
+**/*credentials*.json
+**/.env
+**/credentials.txt
+Config/firebase-credentials.json
+
+# ============================================================================
+# Backup files
+# ============================================================================
+Backup_*/
+
+# ============================================================================
+# Build artifacts
+# ============================================================================
+bin/Obfuscated/
+Release/
+*.bak

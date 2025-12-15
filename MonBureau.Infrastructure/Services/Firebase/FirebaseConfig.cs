@@ -1,127 +1,111 @@
 ﻿using System;
-using System.IO;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
+using Newtonsoft.Json;
 
-namespace MonBureau.Infrastructure.Services.Firebase
+namespace YourApp.Configuration
 {
-    public static class FirebaseConfig
+    /// <summary>
+    /// Secure Firebase configuration using Windows Credential Manager
+    /// </summary>
+    public class FirebaseConfig
     {
-        private static bool _initialized = false;
+        private static FirebaseApp _firebaseApp;
         private static readonly object _lock = new object();
 
-        /// <summary>
-        /// Initialize Firebase with proper error handling and diagnostics
-        /// </summary>
-        public static void Initialize(string credentialsPath)
+        public static FirebaseApp Initialize()
         {
+            if (_firebaseApp != null)
+            {
+                return _firebaseApp;
+            }
+
             lock (_lock)
             {
-                if (_initialized)
+                if (_firebaseApp != null)
                 {
-                    System.Diagnostics.Debug.WriteLine("⚠️ Firebase already initialized");
-                    return;
+                    return _firebaseApp;
                 }
 
                 try
                 {
-                    System.Diagnostics.Debug.WriteLine($"[FirebaseConfig] Starting initialization...");
-                    System.Diagnostics.Debug.WriteLine($"[FirebaseConfig] Credentials path: {credentialsPath}");
+                    // Retrieve credentials from secure storage
+                    string projectId = SecureCredentialManager.GetSecureValue(
+                        "Firebase_ProjectId",
+                        "FIREBASE_PROJECT_ID"
+                    );
 
-                    // Verify file exists
-                    if (!File.Exists(credentialsPath))
+                    string privateKey = SecureCredentialManager.GetSecureValue(
+                        "Firebase_PrivateKey",
+                        "FIREBASE_PRIVATE_KEY"
+                    );
+
+                    string clientEmail = SecureCredentialManager.GetSecureValue(
+                        "Firebase_ClientEmail",
+                        "FIREBASE_CLIENT_EMAIL"
+                    );
+
+                    if (string.IsNullOrEmpty(projectId) ||
+                        string.IsNullOrEmpty(privateKey) ||
+                        string.IsNullOrEmpty(clientEmail))
                     {
-                        throw new FileNotFoundException(
-                            $"Firebase credentials file not found at: {credentialsPath}",
-                            credentialsPath
+                        throw new InvalidOperationException(
+                            "Firebase credentials not found. Please run the installer to configure credentials."
                         );
                     }
 
-                    System.Diagnostics.Debug.WriteLine($"[FirebaseConfig] Credentials file found");
-                    System.Diagnostics.Debug.WriteLine($"[FirebaseConfig] File size: {new FileInfo(credentialsPath).Length} bytes");
-
-                    // Check if Firebase is already initialized
-                    if (FirebaseApp.DefaultInstance != null)
+                    // Build service account JSON
+                    var serviceAccount = new
                     {
-                        System.Diagnostics.Debug.WriteLine("[FirebaseConfig] ℹ️ Using existing FirebaseApp instance");
-                        _initialized = true;
-                        return;
-                    }
+                        type = "service_account",
+                        project_id = projectId,
+                        private_key = privateKey.Replace("\\n", "\n"), // Handle escaped newlines
+                        client_email = clientEmail,
+                        token_uri = "https://oauth2.googleapis.com/token"
+                    };
 
-                    System.Diagnostics.Debug.WriteLine("[FirebaseConfig] Creating new FirebaseApp instance...");
+                    string jsonCredentials = JsonConvert.SerializeObject(serviceAccount);
 
-                    // Create Firebase app
-                    var credential = GoogleCredential.FromFile(credentialsPath);
-                    System.Diagnostics.Debug.WriteLine("[FirebaseConfig] ✅ Credentials loaded successfully");
-
-                    FirebaseApp.Create(new AppOptions()
+                    // Initialize Firebase
+                    _firebaseApp = FirebaseApp.Create(new AppOptions
                     {
-                        Credential = credential,
-                        ProjectId = "monbureau-licenses" // Your Firebase project ID
+                        Credential = GoogleCredential.FromJson(jsonCredentials)
                     });
 
-                    System.Diagnostics.Debug.WriteLine("[FirebaseConfig] ✅ FirebaseApp created successfully");
-
-                    _initialized = true;
-                    System.Diagnostics.Debug.WriteLine("[FirebaseConfig] ✅✅✅ Firebase initialization COMPLETE");
-                }
-                catch (FileNotFoundException ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[FirebaseConfig] ❌ FILE NOT FOUND");
-                    System.Diagnostics.Debug.WriteLine($"[FirebaseConfig]    Path: {ex.FileName}");
-                    System.Diagnostics.Debug.WriteLine($"[FirebaseConfig]    Message: {ex.Message}");
-                    throw new InvalidOperationException(
-                        $"Firebase credentials file not found. Please ensure the file exists at: {credentialsPath}",
-                        ex
-                    );
+                    Console.WriteLine("Firebase initialized successfully");
+                    return _firebaseApp;
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[FirebaseConfig] ❌ INITIALIZATION FAILED");
-                    System.Diagnostics.Debug.WriteLine($"[FirebaseConfig]    Exception Type: {ex.GetType().Name}");
-                    System.Diagnostics.Debug.WriteLine($"[FirebaseConfig]    Message: {ex.Message}");
-                    System.Diagnostics.Debug.WriteLine($"[FirebaseConfig]    StackTrace: {ex.StackTrace}");
-
-                    if (ex.InnerException != null)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[FirebaseConfig]    Inner Exception: {ex.InnerException.Message}");
-                    }
-
-                    throw new InvalidOperationException("Failed to initialize Firebase. See inner exception for details.", ex);
+                    Console.Error.WriteLine($"Failed to initialize Firebase: {ex.Message}");
+                    throw new InvalidOperationException(
+                        "Firebase initialization failed. Check credentials configuration.",
+                        ex
+                    );
                 }
             }
         }
 
         /// <summary>
-        /// Check if Firebase has been initialized
+        /// Gets the initialized Firebase app instance
         /// </summary>
-        public static bool IsInitialized => _initialized;
+        public static FirebaseApp GetApp()
+        {
+            if (_firebaseApp == null)
+            {
+                throw new InvalidOperationException("Firebase has not been initialized");
+            }
+            return _firebaseApp;
+        }
 
         /// <summary>
-        /// Get diagnostic information about Firebase status
+        /// Validates that Firebase credentials are configured
         /// </summary>
-        public static string GetDiagnosticInfo()
+        public static bool AreCredentialsConfigured()
         {
-            var info = $"Firebase Initialized: {_initialized}\n";
-
-            try
-            {
-                if (FirebaseApp.DefaultInstance != null)
-                {
-                    info += "FirebaseApp Instance: EXISTS\n";
-                    info += $"Project ID: {FirebaseApp.DefaultInstance.Options.ProjectId ?? "NOT SET"}\n";
-                }
-                else
-                {
-                    info += "FirebaseApp Instance: NULL\n";
-                }
-            }
-            catch (Exception ex)
-            {
-                info += $"Error getting diagnostic info: {ex.Message}\n";
-            }
-
-            return info;
+            return SecureCredentialManager.CredentialExists("Firebase_ProjectId") &&
+                   SecureCredentialManager.CredentialExists("Firebase_PrivateKey") &&
+                   SecureCredentialManager.CredentialExists("Firebase_ClientEmail");
         }
     }
 }

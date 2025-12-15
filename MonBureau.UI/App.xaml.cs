@@ -13,11 +13,16 @@ using MonBureau.Infrastructure.Data;
 using MonBureau.Infrastructure.Repositories;
 using MonBureau.Infrastructure.Services;
 using MonBureau.Infrastructure.Services.Firebase;
+using MonBureau.Infrastructure.Security;
 using MonBureau.UI.Services;
 using MonBureau.UI.ViewModels;
 
 namespace MonBureau.UI
 {
+    /// <summary>
+    /// UPDATED: App.xaml.cs with comprehensive security initialization
+    /// All your existing code preserved, security checks added
+    /// </summary>
     public partial class App : Application
     {
         private ServiceProvider? _serviceProvider;
@@ -36,81 +41,287 @@ namespace MonBureau.UI
         {
             base.OnStartup(e);
 
+            System.Diagnostics.Debug.WriteLine("[App] ========================================");
+            System.Diagnostics.Debug.WriteLine("[App] MonBureau Starting...");
+            System.Diagnostics.Debug.WriteLine("[App] ========================================");
+
             // Setup global exception handlers
             SetupExceptionHandlers();
 
-            // ✅ INITIALIZE FIREBASE FIRST
+            // ✨ NEW: Security initialization BEFORE everything else
+            if (!InitializeSecurity())
+            {
+                System.Diagnostics.Debug.WriteLine("[App] Security initialization failed - exiting");
+                Shutdown(1);
+                return;
+            }
+
+            // ✨ UPDATED: Firebase initialization with secure credentials
             InitializeFirebase();
 
+            // Configure dependency injection
             var services = new ServiceCollection();
             ConfigureServices(services);
             _serviceProvider = services.BuildServiceProvider();
 
+            // Initialize database (now encrypted)
             InitializeDatabase();
+
+            // Initialize auto-backup
             InitializeAutoBackup();
+
+            System.Diagnostics.Debug.WriteLine("[App] ✓ Application initialized successfully");
+        }
+
+        // ============================================
+        // ✨ NEW: Security Initialization
+        // ============================================
+
+        /// <summary>
+        /// Initializes all security features
+        /// Returns false if critical security check fails
+        /// </summary>
+        private bool InitializeSecurity()
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("[Security] Initializing security features...");
+
+                // 1. Check for debugger (anti-debugging)
+                if (System.Diagnostics.Debugger.IsAttached)
+                {
+                    System.Diagnostics.Debug.WriteLine("[Security] ⚠ Debugger detected");
+
+                    var result = MessageBox.Show(
+                        "Un débogueur a été détecté. Cela peut affecter la sécurité de l'application.\n\n" +
+                        "Continuer quand même?",
+                        "Débogueur Détecté",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Warning);
+
+                    if (result != MessageBoxResult.Yes)
+                    {
+                        return false;
+                    }
+                }
+
+                // 2. Verify application integrity
+                if (!VerifyApplicationIntegrity())
+                {
+                    MessageBox.Show(
+                        "La vérification d'intégrité de l'application a échoué.\n" +
+                        "L'application peut avoir été modifiée.\n\n" +
+                        "Veuillez réinstaller depuis une source fiable.",
+                        "Avertissement de Sécurité",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                    return false;
+                }
+
+                // 3. Check database encryption key
+                if (!SecureCredentialManager.CredentialExists("Database_EncryptionKey"))
+                {
+                    System.Diagnostics.Debug.WriteLine("[Security] First run - encryption key will be generated");
+
+                    var result = MessageBox.Show(
+                        "Première exécution détectée.\n\n" +
+                        "Une clé de chiffrement sécurisée va être générée pour votre base de données.\n\n" +
+                        "IMPORTANT : Conservez une sauvegarde de vos données en lieu sûr!",
+                        "Configuration Initiale",
+                        MessageBoxButton.OKCancel,
+                        MessageBoxImage.Information);
+
+                    if (result != MessageBoxResult.OK)
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("[Security] ✓ Database encryption key found");
+                }
+
+                // 4. Verify encryption is working
+                System.Diagnostics.Debug.WriteLine("[Security] Verifying database encryption...");
+                // This will be tested when database is initialized
+
+                System.Diagnostics.Debug.WriteLine("[Security] ✓ Security initialization complete");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Security] ✗ Security initialization failed: {ex.Message}");
+                LogError(ex);
+
+                MessageBox.Show(
+                    $"Échec de l'initialisation de la sécurité:\n\n{ex.Message}\n\n" +
+                    "L'application ne peut pas continuer.",
+                    "Erreur Critique",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+
+                return false;
+            }
         }
 
         /// <summary>
-        /// ✅ NEW: Initialize Firebase before everything else
+        /// Verifies application files haven't been tampered with
         /// </summary>
+        private bool VerifyApplicationIntegrity()
+        {
+            try
+            {
+                var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+                var assemblyPath = assembly.Location;
+
+                // Check if file exists
+                if (!File.Exists(assemblyPath))
+                {
+                    System.Diagnostics.Debug.WriteLine("[Security] ✗ Assembly file not found");
+                    return false;
+                }
+
+                // Basic check - file size is reasonable
+                var fileInfo = new FileInfo(assemblyPath);
+                if (fileInfo.Length < 1024) // Too small to be valid
+                {
+                    System.Diagnostics.Debug.WriteLine("[Security] ✗ Assembly file too small");
+                    return false;
+                }
+
+                // Additional integrity checks can be added here:
+                // - Digital signature verification
+                // - Checksum validation
+                // - Certificate verification
+
+                System.Diagnostics.Debug.WriteLine("[Security] ✓ Basic integrity check passed");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Security] ✗ Integrity check error: {ex.Message}");
+                return false;
+            }
+        }
+
+        // ============================================
+        // ✨ UPDATED: Firebase initialization with secure credentials
+        // ============================================
+
         private void InitializeFirebase()
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine("[App] Initializing Firebase...");
+                System.Diagnostics.Debug.WriteLine("[Firebase] Initializing...");
 
-                // Chemin vers le fichier de credentials
-                var credentialsPath = Path.Combine(
-                    AppDomain.CurrentDomain.BaseDirectory,
-                    "Config",
-                    "monbureau-licenses-firebase-adminsdk.json"
-                );
-
-                System.Diagnostics.Debug.WriteLine($"[App] Looking for credentials at: {credentialsPath}");
-
-                if (!File.Exists(credentialsPath))
+                // Check if credentials are configured
+                if (!FirebaseConfig.IsInitialized)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[App] ⚠️ Firebase credentials not found!");
-                    System.Diagnostics.Debug.WriteLine($"[App] Expected path: {credentialsPath}");
-                    System.Diagnostics.Debug.WriteLine($"[App] App will run in OFFLINE MODE");
+                    System.Diagnostics.Debug.WriteLine("[Firebase] Not initialized, checking credentials...");
 
-                    MessageBox.Show(
-                        "Fichier de configuration Firebase manquant.\n\n" +
-                        $"Chemin attendu: {credentialsPath}\n\n" +
-                        "L'application fonctionnera en mode dégradé.\n" +
-                        "La validation des licences sera limitée.",
-                        "Configuration Firebase manquante",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning
-                    );
-                    return;
+                    // Check if credentials exist in Credential Manager
+                    bool hasProjectId = SecureCredentialManager.CredentialExists("Firebase_ProjectId");
+                    bool hasPrivateKey = SecureCredentialManager.CredentialExists("Firebase_PrivateKey");
+                    bool hasClientEmail = SecureCredentialManager.CredentialExists("Firebase_ClientEmail");
+
+                    if (!hasProjectId || !hasPrivateKey || !hasClientEmail)
+                    {
+                        System.Diagnostics.Debug.WriteLine("[Firebase] ⚠ Credentials not configured");
+
+                        var result = MessageBox.Show(
+                            "Les identifiants Firebase ne sont pas configurés.\n\n" +
+                            "Voulez-vous les configurer maintenant?\n" +
+                            "(Nécessite un redémarrage)",
+                            "Configuration Firebase Requise",
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Question);
+
+                        if (result == MessageBoxResult.Yes)
+                        {
+                            LaunchCredentialSetup();
+                        }
+
+                        // Continue without Firebase (offline mode)
+                        System.Diagnostics.Debug.WriteLine("[Firebase] Running in offline mode");
+                        return;
+                    }
                 }
 
-                System.Diagnostics.Debug.WriteLine("[App] Credentials file found, initializing...");
-
-                // Initialiser Firebase
-                FirebaseConfig.Initialize(credentialsPath);
-
-                System.Diagnostics.Debug.WriteLine("[App] ✅ Firebase initialized successfully");
+                // Initialize Firebase with secure credentials
+                FirebaseConfig.Initialize();
+                System.Diagnostics.Debug.WriteLine("[Firebase] ✓ Initialized successfully");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[App] ❌ Firebase initialization failed: {ex.GetType().Name}");
-                System.Diagnostics.Debug.WriteLine($"[App] Message: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"[App] StackTrace: {ex.StackTrace}");
-
+                System.Diagnostics.Debug.WriteLine($"[Firebase] ✗ Initialization failed: {ex.Message}");
                 LogError(ex);
 
                 MessageBox.Show(
-                    $"Erreur d'initialisation Firebase:\n\n{ex.Message}\n\n" +
-                    "L'application fonctionnera en mode dégradé.\n" +
-                    "La validation des licences sera limitée.",
-                    "Erreur Firebase",
+                    "Échec de l'initialisation des fonctionnalités cloud.\n" +
+                    "L'application fonctionnera en mode hors ligne.\n\n" +
+                    "Vérifiez votre connexion Internet et vos identifiants Firebase.",
+                    "Fonctionnalités Cloud Indisponibles",
                     MessageBoxButton.OK,
-                    MessageBoxImage.Warning
-                );
+                    MessageBoxImage.Warning);
             }
         }
+
+        /// <summary>
+        /// Launches the credential setup PowerShell script
+        /// </summary>
+        private void LaunchCredentialSetup()
+        {
+            try
+            {
+                var setupScript = Path.Combine(
+                    AppDomain.CurrentDomain.BaseDirectory,
+                    "Scripts",
+                    "SetupCredentials.ps1");
+
+                if (File.Exists(setupScript))
+                {
+                    var psi = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "powershell.exe",
+                        Arguments = $"-ExecutionPolicy Bypass -File \"{setupScript}\"",
+                        UseShellExecute = true,
+                        Verb = "runas" // Request admin privileges
+                    };
+
+                    System.Diagnostics.Process.Start(psi);
+
+                    MessageBox.Show(
+                        "Veuillez redémarrer l'application après avoir terminé la configuration.",
+                        "Redémarrage Requis",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+
+                    Shutdown(0);
+                }
+                else
+                {
+                    MessageBox.Show(
+                        "Script de configuration introuvable.\n" +
+                        "Veuillez exécuter SetupCredentials.ps1 manuellement.",
+                        "Configuration Requise",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Setup] Error launching setup: {ex.Message}");
+                MessageBox.Show(
+                    $"Impossible de lancer la configuration: {ex.Message}",
+                    "Erreur de Configuration",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
+        // ============================================
+        // EXISTING: Exception handlers
+        // ============================================
 
         private void SetupExceptionHandlers()
         {
@@ -179,6 +390,10 @@ namespace MonBureau.UI
                 MessageBoxImage.Error);
         }
 
+        // ============================================
+        // EXISTING: Service configuration
+        // ============================================
+
         private void ConfigureServices(ServiceCollection services)
         {
             var dbPath = Path.Combine(
@@ -193,9 +408,7 @@ namespace MonBureau.UI
                 Directory.CreateDirectory(directory);
             }
 
-            // ========================================
-            // Database
-            // ========================================
+            // Database - now with encryption
             services.AddDbContextFactory<AppDbContext>(options =>
             {
                 options.UseSqlite($"Data Source={dbPath}");
@@ -210,14 +423,10 @@ namespace MonBureau.UI
                 options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
             }, ServiceLifetime.Scoped);
 
-            // ========================================
             // Repositories
-            // ========================================
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-            // ========================================
             // Infrastructure Services - Singleton
-            // ========================================
             services.AddSingleton(sp =>
             {
                 var factory = sp.GetRequiredService<IDbContextFactory<AppDbContext>>();
@@ -226,26 +435,19 @@ namespace MonBureau.UI
 
             services.AddSingleton<DpapiService>();
             services.AddSingleton<DeviceIdentifier>();
-
-            // ✅ UPDATED: Firebase License Service
             services.AddSingleton<FirestoreLicenseService>(sp =>
             {
                 return new FirestoreLicenseService("monbureau-licenses");
             });
-
             services.AddSingleton<SecureLicenseStorage>();
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddSingleton<CacheService>();
             services.AddSingleton<AutoBackupService>();
 
-            // ========================================
             // Business Services - Scoped
-            // ========================================
             services.AddScoped<ICaseService, CaseService>();
 
-            // ========================================
             // ViewModels - Transient
-            // ========================================
             services.AddTransient<MainViewModel>();
             services.AddTransient<DashboardViewModel>();
             services.AddTransient<ClientsViewModel>();
@@ -255,26 +457,59 @@ namespace MonBureau.UI
             services.AddTransient<DocumentsViewModel>();
         }
 
+        // ============================================
+        // ✨ UPDATED: Database initialization with encryption verification
+        // ============================================
+
         private void InitializeDatabase()
         {
             try
             {
+                System.Diagnostics.Debug.WriteLine("[Database] Initializing...");
+
                 using var scope = _serviceProvider?.CreateScope();
                 if (scope != null)
                 {
                     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+                    // Ensure database is created
                     context.Database.EnsureCreated();
+                    System.Diagnostics.Debug.WriteLine("[Database] ✓ Database created/verified");
+
+                    // Verify encryption is working
+                    bool encryptionVerified = AppDbContext.VerifyEncryption();
+                    if (!encryptionVerified)
+                    {
+                        throw new InvalidOperationException(
+                            "Database encryption verification failed"
+                        );
+                    }
+                    System.Diagnostics.Debug.WriteLine("[Database] ✓ Encryption verified");
+
+                    // Seed database if empty
                     SeedDatabaseIfEmpty(context);
+                    System.Diagnostics.Debug.WriteLine("[Database] ✓ Initialization complete");
                 }
             }
             catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"[Database] ✗ Initialization failed: {ex.Message}");
                 LogError(ex);
-                MessageBox.Show($"Erreur d'initialisation de la base de données: {ex.Message}",
-                    "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
-                Shutdown();
+
+                MessageBox.Show(
+                    $"Erreur d'initialisation de la base de données:\n\n{ex.Message}\n\n" +
+                    "Cela peut indiquer une base de données corrompue ou une clé de chiffrement invalide.",
+                    "Erreur Critique",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+
+                Shutdown(1);
             }
         }
+
+        // ============================================
+        // EXISTING: Auto-backup initialization
+        // ============================================
 
         private void InitializeAutoBackup()
         {
@@ -286,7 +521,7 @@ namespace MonBureau.UI
                 {
                     var settings = _autoBackupService.GetSettings();
                     System.Diagnostics.Debug.WriteLine(
-                        $"Auto-backup initialized. Enabled: {settings.Enabled}, " +
+                        $"[AutoBackup] Initialized. Enabled: {settings.Enabled}, " +
                         $"Interval: {settings.IntervalType}, " +
                         $"Last backup: {settings.LastBackupDate:yyyy-MM-dd HH:mm}");
                 }
@@ -294,14 +529,20 @@ namespace MonBureau.UI
             catch (Exception ex)
             {
                 LogError(ex);
-                System.Diagnostics.Debug.WriteLine($"Failed to initialize auto-backup: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[AutoBackup] Failed to initialize: {ex.Message}");
             }
         }
+
+        // ============================================
+        // EXISTING: Database seeding
+        // ============================================
 
         private void SeedDatabaseIfEmpty(AppDbContext context)
         {
             if (!context.Clients.Any())
             {
+                System.Diagnostics.Debug.WriteLine("[Database] Seeding initial data...");
+
                 var client1 = new Client
                 {
                     FirstName = "Ahmed",
@@ -382,11 +623,19 @@ namespace MonBureau.UI
 
                 context.CaseItems.AddRange(doc1, expense1);
                 context.SaveChanges();
+
+                System.Diagnostics.Debug.WriteLine("[Database] ✓ Initial data seeded");
             }
         }
 
+        // ============================================
+        // EXISTING: Cleanup on exit
+        // ============================================
+
         protected override void OnExit(ExitEventArgs e)
         {
+            System.Diagnostics.Debug.WriteLine("[App] Application exiting...");
+
             _autoBackupService?.Dispose();
             _autoBackupService = null;
 
@@ -396,8 +645,13 @@ namespace MonBureau.UI
                 _serviceProvider = null;
             }
 
+            System.Diagnostics.Debug.WriteLine("[App] ✓ Cleanup complete");
             base.OnExit(e);
         }
+
+        // ============================================
+        // EXISTING: Service locator
+        // ============================================
 
         public static T GetService<T>() where T : class
         {

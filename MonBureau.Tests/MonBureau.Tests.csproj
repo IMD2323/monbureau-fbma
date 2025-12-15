@@ -9,6 +9,15 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Compile Remove="Integration\**" />
+	  <Compile Remove="Validators\**" />
+	  <EmbeddedResource Remove="Integration\**" />
+	  <EmbeddedResource Remove="Validators\**" />
+	  <None Remove="Integration\**" />
+	  <None Remove="Validators\**" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="coverlet.collector" Version="6.0.0">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -27,11 +36,6 @@
 	<ItemGroup>
 		<ProjectReference Include="..\MonBureau.Core\MonBureau.Core.csproj" />
 		<ProjectReference Include="..\MonBureau.Infrastructure\MonBureau.Infrastructure.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Integration\" />
-	  <Folder Include="Validators\" />
 	</ItemGroup>
 
 </Project>

@@ -1,9 +1,10 @@
 ﻿using System;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
+using MonBureau.Infrastructure.Security;
 using Newtonsoft.Json;
 
-namespace YourApp.Configuration
+namespace MonBureau.Infrastructure.Services.Firebase
 {
     /// <summary>
     /// Secure Firebase configuration using Windows Credential Manager

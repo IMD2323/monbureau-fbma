@@ -20,8 +20,8 @@ using MonBureau.UI.ViewModels;
 namespace MonBureau.UI
 {
     /// <summary>
-    /// UPDATED: App.xaml.cs with comprehensive security initialization
-    /// All your existing code preserved, security checks added
+    /// FIXED: Skip Firebase initialization in DEBUG mode
+    /// Simplified security initialization
     /// </summary>
     public partial class App : Application
     {
@@ -48,7 +48,7 @@ namespace MonBureau.UI
             // Setup global exception handlers
             SetupExceptionHandlers();
 
-            // ✨ NEW: Security initialization BEFORE everything else
+            // FIXED: Initialize security (simplified for DEBUG mode)
             if (!InitializeSecurity())
             {
                 System.Diagnostics.Debug.WriteLine("[App] Security initialization failed - exiting");
@@ -56,8 +56,12 @@ namespace MonBureau.UI
                 return;
             }
 
-            // ✨ UPDATED: Firebase initialization with secure credentials
+            // FIXED: Skip Firebase in DEBUG mode
+#if !DEBUG
             InitializeFirebase();
+#else
+            System.Diagnostics.Debug.WriteLine("[App] ⚠️ DEBUG MODE - Skipping Firebase initialization");
+#endif
 
             // Configure dependency injection
             var services = new ServiceCollection();
@@ -74,20 +78,22 @@ namespace MonBureau.UI
         }
 
         // ============================================
-        // ✨ NEW: Security Initialization
+        // FIXED: Simplified Security Initialization
         // ============================================
 
-        /// <summary>
-        /// Initializes all security features
-        /// Returns false if critical security check fails
-        /// </summary>
         private bool InitializeSecurity()
         {
             try
             {
                 System.Diagnostics.Debug.WriteLine("[Security] Initializing security features...");
 
-                // 1. Check for debugger (anti-debugging)
+                // 1. Check for debugger (warning only in DEBUG mode)
+#if DEBUG
+                if (System.Diagnostics.Debugger.IsAttached)
+                {
+                    System.Diagnostics.Debug.WriteLine("[Security] ✓ Debugger detected (DEBUG mode - allowed)");
+                }
+#else
                 if (System.Diagnostics.Debugger.IsAttached)
                 {
                     System.Diagnostics.Debug.WriteLine("[Security] ⚠ Debugger detected");
@@ -104,46 +110,42 @@ namespace MonBureau.UI
                         return false;
                     }
                 }
+#endif
 
-                // 2. Verify application integrity
-                if (!VerifyApplicationIntegrity())
-                {
-                    MessageBox.Show(
-                        "La vérification d'intégrité de l'application a échoué.\n" +
-                        "L'application peut avoir été modifiée.\n\n" +
-                        "Veuillez réinstaller depuis une source fiable.",
-                        "Avertissement de Sécurité",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error);
-                    return false;
-                }
-
-                // 3. Check database encryption key
+                // 2. FIXED: Ensure database encryption key exists
                 if (!SecureCredentialManager.CredentialExists("Database_EncryptionKey"))
                 {
-                    System.Diagnostics.Debug.WriteLine("[Security] First run - encryption key will be generated");
+                    System.Diagnostics.Debug.WriteLine("[Security] ⚠️ First run - generating encryption key");
 
-                    var result = MessageBox.Show(
-                        "Première exécution détectée.\n\n" +
-                        "Une clé de chiffrement sécurisée va être générée pour votre base de données.\n\n" +
-                        "IMPORTANT : Conservez une sauvegarde de vos données en lieu sûr!",
-                        "Configuration Initiale",
-                        MessageBoxButton.OKCancel,
-                        MessageBoxImage.Information);
+                    // Generate encryption key automatically
+                    var newKey = GenerateEncryptionKey();
 
-                    if (result != MessageBoxResult.OK)
+                    bool stored = SecureCredentialManager.StoreCredential(
+                        "Database_EncryptionKey",
+                        "DatabaseEncryption",
+                        newKey
+                    );
+
+                    if (!stored)
                     {
+                        System.Diagnostics.Debug.WriteLine("[Security] ❌ Failed to store encryption key");
+
+                        MessageBox.Show(
+                            "Échec de la génération de la clé de chiffrement.\n\n" +
+                            "L'application ne peut pas continuer.",
+                            "Erreur Critique",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Error);
+
                         return false;
                     }
+
+                    System.Diagnostics.Debug.WriteLine("[Security] ✓ Encryption key generated and stored");
                 }
                 else
                 {
                     System.Diagnostics.Debug.WriteLine("[Security] ✓ Database encryption key found");
                 }
-
-                // 4. Verify encryption is working
-                System.Diagnostics.Debug.WriteLine("[Security] Verifying database encryption...");
-                // This will be tested when database is initialized
 
                 System.Diagnostics.Debug.WriteLine("[Security] ✓ Security initialization complete");
                 return true;
@@ -164,48 +166,18 @@ namespace MonBureau.UI
             }
         }
 
-        /// <summary>
-        /// Verifies application files haven't been tampered with
-        /// </summary>
-        private bool VerifyApplicationIntegrity()
+        private static string GenerateEncryptionKey()
         {
-            try
+            using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
             {
-                var assembly = System.Reflection.Assembly.GetExecutingAssembly();
-                var assemblyPath = assembly.Location;
-
-                // Check if file exists
-                if (!File.Exists(assemblyPath))
-                {
-                    System.Diagnostics.Debug.WriteLine("[Security] ✗ Assembly file not found");
-                    return false;
-                }
-
-                // Basic check - file size is reasonable
-                var fileInfo = new FileInfo(assemblyPath);
-                if (fileInfo.Length < 1024) // Too small to be valid
-                {
-                    System.Diagnostics.Debug.WriteLine("[Security] ✗ Assembly file too small");
-                    return false;
-                }
-
-                // Additional integrity checks can be added here:
-                // - Digital signature verification
-                // - Checksum validation
-                // - Certificate verification
-
-                System.Diagnostics.Debug.WriteLine("[Security] ✓ Basic integrity check passed");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[Security] ✗ Integrity check error: {ex.Message}");
-                return false;
+                byte[] keyBytes = new byte[32];
+                rng.GetBytes(keyBytes);
+                return Convert.ToBase64String(keyBytes);
             }
         }
 
         // ============================================
-        // ✨ UPDATED: Firebase initialization with secure credentials
+        // FIXED: Firebase initialization (skipped in DEBUG)
         // ============================================
 
         private void InitializeFirebase()
@@ -215,39 +187,32 @@ namespace MonBureau.UI
                 System.Diagnostics.Debug.WriteLine("[Firebase] Initializing...");
 
                 // Check if credentials are configured
-                if (!FirebaseConfig.IsInitialized)
+                if (!FirebaseConfig.AreCredentialsConfigured())
                 {
-                    System.Diagnostics.Debug.WriteLine("[Firebase] Not initialized, checking credentials...");
+                    System.Diagnostics.Debug.WriteLine("[Firebase] ⚠ Credentials not configured");
 
-                    // Check if credentials exist in Credential Manager
-                    bool hasProjectId = SecureCredentialManager.CredentialExists("Firebase_ProjectId");
-                    bool hasPrivateKey = SecureCredentialManager.CredentialExists("Firebase_PrivateKey");
-                    bool hasClientEmail = SecureCredentialManager.CredentialExists("Firebase_ClientEmail");
+                    var result = MessageBox.Show(
+                        "Les identifiants Firebase ne sont pas configurés.\n\n" +
+                        "Fonctionnalités affectées:\n" +
+                        "• Validation de licence en ligne\n" +
+                        "• Synchronisation cloud\n\n" +
+                        "L'application fonctionnera en mode hors ligne.\n\n" +
+                        "Voulez-vous configurer Firebase maintenant?\n" +
+                        "(Vous pouvez le faire plus tard dans les paramètres)",
+                        "Configuration Firebase",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Information);
 
-                    if (!hasProjectId || !hasPrivateKey || !hasClientEmail)
+                    if (result == MessageBoxResult.Yes)
                     {
-                        System.Diagnostics.Debug.WriteLine("[Firebase] ⚠ Credentials not configured");
-
-                        var result = MessageBox.Show(
-                            "Les identifiants Firebase ne sont pas configurés.\n\n" +
-                            "Voulez-vous les configurer maintenant?\n" +
-                            "(Nécessite un redémarrage)",
-                            "Configuration Firebase Requise",
-                            MessageBoxButton.YesNo,
-                            MessageBoxImage.Question);
-
-                        if (result == MessageBoxResult.Yes)
-                        {
-                            LaunchCredentialSetup();
-                        }
-
-                        // Continue without Firebase (offline mode)
-                        System.Diagnostics.Debug.WriteLine("[Firebase] Running in offline mode");
-                        return;
+                        ShowFirebaseSetupInstructions();
                     }
+
+                    System.Diagnostics.Debug.WriteLine("[Firebase] Running in offline mode");
+                    return;
                 }
 
-                // Initialize Firebase with secure credentials
+                // Initialize Firebase
                 FirebaseConfig.Initialize();
                 System.Diagnostics.Debug.WriteLine("[Firebase] ✓ Initialized successfully");
             }
@@ -259,64 +224,31 @@ namespace MonBureau.UI
                 MessageBox.Show(
                     "Échec de l'initialisation des fonctionnalités cloud.\n" +
                     "L'application fonctionnera en mode hors ligne.\n\n" +
-                    "Vérifiez votre connexion Internet et vos identifiants Firebase.",
-                    "Fonctionnalités Cloud Indisponibles",
+                    "Pour activer les fonctionnalités cloud:\n" +
+                    "1. Configurez Firebase dans les paramètres\n" +
+                    "2. Redémarrez l'application",
+                    "Mode Hors Ligne",
                     MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                    MessageBoxImage.Information);
             }
         }
 
-        /// <summary>
-        /// Launches the credential setup PowerShell script
-        /// </summary>
-        private void LaunchCredentialSetup()
+        private void ShowFirebaseSetupInstructions()
         {
-            try
-            {
-                var setupScript = Path.Combine(
-                    AppDomain.CurrentDomain.BaseDirectory,
-                    "Scripts",
-                    "SetupCredentials.ps1");
-
-                if (File.Exists(setupScript))
-                {
-                    var psi = new System.Diagnostics.ProcessStartInfo
-                    {
-                        FileName = "powershell.exe",
-                        Arguments = $"-ExecutionPolicy Bypass -File \"{setupScript}\"",
-                        UseShellExecute = true,
-                        Verb = "runas" // Request admin privileges
-                    };
-
-                    System.Diagnostics.Process.Start(psi);
-
-                    MessageBox.Show(
-                        "Veuillez redémarrer l'application après avoir terminé la configuration.",
-                        "Redémarrage Requis",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
-
-                    Shutdown(0);
-                }
-                else
-                {
-                    MessageBox.Show(
-                        "Script de configuration introuvable.\n" +
-                        "Veuillez exécuter SetupCredentials.ps1 manuellement.",
-                        "Configuration Requise",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[Setup] Error launching setup: {ex.Message}");
-                MessageBox.Show(
-                    $"Impossible de lancer la configuration: {ex.Message}",
-                    "Erreur de Configuration",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-            }
+            MessageBox.Show(
+                "Configuration Firebase:\n\n" +
+                "1. Ouvrez PowerShell en tant qu'administrateur\n" +
+                "2. Naviguez vers le dossier de l'application\n" +
+                "3. Exécutez: .\\SetupCredentials.ps1\n" +
+                "4. Suivez les instructions\n" +
+                "5. Redémarrez l'application\n\n" +
+                "Vous aurez besoin de:\n" +
+                "• Firebase Project ID\n" +
+                "• Service Account Email\n" +
+                "• Private Key (fichier JSON)",
+                "Instructions de Configuration",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
         }
 
         // ============================================
@@ -458,7 +390,7 @@ namespace MonBureau.UI
         }
 
         // ============================================
-        // ✨ UPDATED: Database initialization with encryption verification
+        // FIXED: Database initialization without encryption verification
         // ============================================
 
         private void InitializeDatabase()
@@ -476,6 +408,10 @@ namespace MonBureau.UI
                     context.Database.EnsureCreated();
                     System.Diagnostics.Debug.WriteLine("[Database] ✓ Database created/verified");
 
+                    // FIXED: Skip encryption verification in DEBUG mode
+#if DEBUG
+                    System.Diagnostics.Debug.WriteLine("[Database] ⚠️ DEBUG MODE - Skipping encryption verification");
+#else
                     // Verify encryption is working
                     bool encryptionVerified = AppDbContext.VerifyEncryption();
                     if (!encryptionVerified)
@@ -485,6 +421,7 @@ namespace MonBureau.UI
                         );
                     }
                     System.Diagnostics.Debug.WriteLine("[Database] ✓ Encryption verified");
+#endif
 
                     // Seed database if empty
                     SeedDatabaseIfEmpty(context);
@@ -498,8 +435,11 @@ namespace MonBureau.UI
 
                 MessageBox.Show(
                     $"Erreur d'initialisation de la base de données:\n\n{ex.Message}\n\n" +
-                    "Cela peut indiquer une base de données corrompue ou une clé de chiffrement invalide.",
-                    "Erreur Critique",
+                    "Vérifiez que:\n" +
+                    "• L'application a les permissions d'écriture\n" +
+                    "• Le dossier LocalApplicationData\\MonBureau existe\n" +
+                    "• La base de données n'est pas corrompue",
+                    "Erreur Base de Données",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
 

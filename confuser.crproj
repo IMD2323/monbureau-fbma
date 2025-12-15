@@ -1,32 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <project baseDir="bin\Release" outputDir="bin\Obfuscated" xmlns="http://confuser.codeplex.com">
   
-  <!-- Assembly to obfuscate -->
-  <module path="YourApp.exe">
+  <!-- Main Application -->
+  <module path="MonBureau.UI.exe">
     <rule pattern="true" preset="maximum" inherit="false">
       
-      <!-- Strong obfuscation settings -->
+      <!-- Strong obfuscation -->
       <protection id="anti ildasm" />
       <protection id="anti tamper" />
       <protection id="anti debug" />
       <protection id="anti dump" />
+      
       <protection id="constants">
         <argument name="mode" value="dynamic" />
         <argument name="elements" value="SNPI" />
         <argument name="cfg" value="true" />
       </protection>
+      
       <protection id="ctrl flow">
         <argument name="predicate" value="expression" />
         <argument name="intensity" value="high" />
         <argument name="depth" value="4" />
         <argument name="junk" value="true" />
       </protection>
+      
       <protection id="ref proxy">
         <argument name="mode" value="strong" />
         <argument name="encoding" value="expression" />
         <argument name="depth" value="3" />
         <argument name="initCount" value="16" />
       </protection>
+      
       <protection id="rename">
         <argument name="mode" value="decodable" />
         <argument name="renEnum" value="true" />
@@ -34,25 +38,30 @@
         <argument name="flatten" value="true" />
         <argument name="renameArgs" value="true" />
       </protection>
+      
       <protection id="resources">
         <argument name="mode" value="dynamic" />
       </protection>
+      
       <protection id="harden" />
       
     </rule>
     
     <!-- Exclude Entity Framework entities from renaming -->
-    <rule pattern="namespace('YourApp.Data.Models')" preset="none" inherit="true">
+    <rule pattern="namespace('MonBureau.Core.Entities')" preset="none" inherit="true">
       <protection id="rename" action="remove" />
     </rule>
     
-    <!-- Exclude controllers/views if ASP.NET -->
-    <rule pattern="namespace('YourApp.Controllers')" preset="none" inherit="true">
-      <protection id="rename" action="remove" />
+    <!-- Exclude ViewModels from aggressive renaming -->
+    <rule pattern="namespace('MonBureau.UI.ViewModels')" preset="none" inherit="true">
+      <protection id="rename">
+        <argument name="mode" value="decodable" />
+        <argument name="renPublic" value="false" />
+      </protection>
     </rule>
     
-    <!-- Protect license validation strongly -->
-    <rule pattern="namespace('YourApp.Licensing')" preset="maximum" inherit="false">
+    <!-- Protect license validation heavily -->
+    <rule pattern="namespace('MonBureau.Infrastructure.Services.Firebase')" preset="maximum" inherit="false">
       <protection id="anti tamper" />
       <protection id="constants">
         <argument name="mode" value="dynamic" />
@@ -64,16 +73,23 @@
     
   </module>
   
-  <!-- Dependencies (usually don't obfuscate) -->
-  <module path="YourApp.Core.dll">
+  <!-- Core Library -->
+  <module path="MonBureau.Core.dll">
     <rule pattern="true" preset="none" inherit="false">
-      <!-- Only basic protections for libraries -->
       <protection id="anti ildasm" />
       <protection id="constants" />
     </rule>
   </module>
   
-  <!-- Exclude third-party libraries -->
+  <!-- Infrastructure Library -->
+  <module path="MonBureau.Infrastructure.dll">
+    <rule pattern="true" preset="minimum" inherit="false">
+      <protection id="anti ildasm" />
+      <protection id="anti tamper" />
+      <protection id="constants" />
+    </rule>
+  </module>
+  
   <probePath>.</probePath>
   
 </project>

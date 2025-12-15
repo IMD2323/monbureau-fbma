@@ -1,6 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <Compile Remove="Scripts\**" />
+    <EmbeddedResource Remove="Scripts\**" />
+    <None Remove="Scripts\**" />
+    <Page Remove="Scripts\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="Config\monbureau-licenses-firebase-adminsdk.json" />
   </ItemGroup>
 
@@ -19,7 +26,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Scripts\" />
     <Folder Include="Resources\" />
   </ItemGroup>
 

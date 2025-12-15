@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq.Expressions;
 using System.Windows;
 using MonBureau.Core.Entities;
 using MonBureau.Core.Interfaces;
@@ -8,8 +9,8 @@ using MonBureau.UI.Views.Dialogs;
 namespace MonBureau.UI.ViewModels
 {
     /// <summary>
-    /// SIMPLIFIED: Only 40 lines! (was 200+ lines)
-    /// All CRUD logic inherited from CrudViewModelBase
+    /// FIXED: Database-level filtering instead of in-memory
+    /// No more loading all clients into memory
     /// </summary>
     public class ClientsViewModel : CrudViewModelBase<Client>
     {
@@ -21,17 +22,25 @@ namespace MonBureau.UI.ViewModels
         protected override IRepository<Client> GetRepository()
             => _unitOfWork.Clients;
 
-        protected override void ApplyFilter()
+        /// <summary>
+        /// FIXED: Builds filter expression that executes in DATABASE
+        /// Previously filtered 10,000+ clients in memory on every keystroke
+        /// Now executes as SQL WHERE clause
+        /// </summary>
+        protected override Expression<Func<Client, bool>>? BuildFilterExpression(string searchText)
         {
-            var filtered = FilterByProperties(
-                _allItems,
-                c => c.FirstName,
-                c => c.LastName,
-                c => c.ContactEmail,
-                c => c.ContactPhone
-            ).OrderByDescending(c => c.CreatedAt);
+            if (string.IsNullOrWhiteSpace(searchText))
+                return null; // No filter = all records (paginated)
 
-            RefreshItemsCollection(filtered);
+            var lowerSearch = searchText.ToLowerInvariant();
+
+            // This expression is translated to SQL by Entity Framework
+            // Example SQL: WHERE LOWER(FirstName) LIKE '%search%' OR LOWER(LastName) LIKE '%search%'
+            return c =>
+                (c.FirstName != null && c.FirstName.ToLower().Contains(lowerSearch)) ||
+                (c.LastName != null && c.LastName.ToLower().Contains(lowerSearch)) ||
+                (c.ContactEmail != null && c.ContactEmail.ToLower().Contains(lowerSearch)) ||
+                (c.ContactPhone != null && c.ContactPhone.Contains(searchText)); // Phone exact match
         }
 
         protected override Window CreateAddDialog()

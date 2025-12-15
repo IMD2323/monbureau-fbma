@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -12,8 +11,8 @@ using MonBureau.Core.Interfaces;
 namespace MonBureau.UI.ViewModels.Base
 {
     /// <summary>
-    /// SIMPLIFIED: Generic CRUD base ViewModel
-    /// Eliminates 90% of repetitive CRUD code
+    /// FIXED: True server-side pagination and filtering
+    /// No more loading entire tables into memory
     /// </summary>
     public abstract partial class CrudViewModelBase<TEntity> : ViewModelBase, IDisposable
         where TEntity : class
@@ -42,7 +41,11 @@ namespace MonBureau.UI.ViewModels.Base
         [ObservableProperty]
         private int _totalItems;
 
-        protected List<TEntity> _allItems = new();
+        [ObservableProperty]
+        private int _totalPages;
+
+        // REMOVED: No more _allItems list (memory leak)
+        // All filtering happens in database
 
         #endregion
 
@@ -62,7 +65,6 @@ namespace MonBureau.UI.ViewModels.Base
             _loadCancellation = null;
 
             Items.Clear();
-            _allItems.Clear();
 
             _disposed = true;
             GC.SuppressFinalize(this);
@@ -84,7 +86,7 @@ namespace MonBureau.UI.ViewModels.Base
 
             try
             {
-                await LoadDataAsync(_loadCancellation.Token);
+                await LoadPageAsync(GetTotalPages(), _loadCancellation.Token);
             }
             catch (OperationCanceledException)
             {
@@ -100,21 +102,52 @@ namespace MonBureau.UI.ViewModels.Base
             }
         }
 
-        protected virtual async Task LoadDataAsync(CancellationToken ct)
+        protected virtual int GetTotalPages()
         {
-            var items = await Task.Run(async () =>
+            return TotalPages;
+        }
+
+        /// <summary>
+        /// FIXED: Loads single page from database
+        /// No in-memory filtering
+        /// </summary>
+        protected virtual async Task LoadPageAsync(int totalPages, CancellationToken ct)
+        {
+            // Build filter expression from search text
+            var filterExpression = BuildFilterExpression(SearchFilter);
+
+            // Count total matching records (in database)
+            TotalItems = await GetRepository().CountAsync(filterExpression);
+            totalPages = (int)Math.Ceiling((double)TotalItems / PageSize);
+
+            // Ensure current page is valid
+            if (CurrentPage > TotalPages && TotalPages > 0)
             {
-                return (await GetRepository().GetAllAsync()).ToList();
-            }, ct);
+                CurrentPage = TotalPages;
+            }
+
+            // Load current page (in database)
+            var skip = (CurrentPage - 1) * PageSize;
+            var pageData = await GetRepository().GetPagedAsync(
+                skip,
+                PageSize,
+                filterExpression
+            );
 
             if (ct.IsCancellationRequested) return;
 
-            _allItems = items;
-            TotalItems = _allItems.Count;
-
+            // Update UI
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
-                ApplyFilter();
+                Items.Clear();
+                foreach (var item in pageData)
+                {
+                    Items.Add(item);
+                }
+
+                System.Diagnostics.Debug.WriteLine(
+                    $"[CrudViewModel] Loaded page {CurrentPage}/{TotalPages} ({Items.Count} items)"
+                );
             });
         }
 
@@ -122,42 +155,31 @@ namespace MonBureau.UI.ViewModels.Base
 
         #region Search & Filter
 
+        /// <summary>
+        /// FIXED: Triggers database query instead of in-memory filter
+        /// </summary>
         partial void OnSearchFilterChanged(string value)
         {
-            CurrentPage = 1;
-            ApplyFilter();
+            CurrentPage = 1; // Reset to first page
+            _ = LoadPageAsync(GetTotalPages(), new CancellationToken()); // Trigger reload
         }
 
+        /// <summary>
+        /// FIXED: Navigates to different page (database query)
+        /// </summary>
         partial void OnCurrentPageChanged(int value)
         {
-            ApplyFilter();
+            _ = LoadPageAsync(GetTotalPages(), new CancellationToken());
         }
 
-        protected abstract void ApplyFilter();
+        /// <summary>
+        /// Override to build entity-specific filter expressions
+        /// This executes in DATABASE, not in-memory
+        /// </summary>
+        protected abstract Expression<Func<TEntity, bool>>? BuildFilterExpression(string searchText);
 
-        protected IEnumerable<TEntity> FilterByProperties(
-            IEnumerable<TEntity> source,
-            params Func<TEntity, string?>[] propertySelectors)
-        {
-            if (string.IsNullOrWhiteSpace(SearchFilter))
-                return source;
-
-            var lowerFilter = SearchFilter.ToLowerInvariant();
-
-            return source.Where(item =>
-                propertySelectors.Any(selector =>
-                {
-                    var value = selector(item);
-                    return value?.ToLowerInvariant().Contains(lowerFilter) ?? false;
-                })
-            );
-        }
-
-        protected IEnumerable<TEntity> ApplyPagination(IEnumerable<TEntity> source)
-        {
-            var skip = (CurrentPage - 1) * PageSize;
-            return source.Skip(skip).Take(PageSize);
-        }
+        // REMOVED: ApplyFilter() - no longer needed
+        // REMOVED: FilterByProperties() - replaced by BuildFilterExpression()
 
         #endregion
 
@@ -249,7 +271,7 @@ namespace MonBureau.UI.ViewModels.Base
         [RelayCommand]
         protected virtual void NextPage()
         {
-            if ((CurrentPage * PageSize) < TotalItems)
+            if (CurrentPage < TotalPages)
                 CurrentPage++;
         }
 
@@ -274,18 +296,6 @@ namespace MonBureau.UI.ViewModels.Base
         #endregion
 
         #region Helper Methods
-
-        protected void RefreshItemsCollection(IEnumerable<TEntity> filtered)
-        {
-            var paginated = ApplyPagination(filtered);
-
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                Items.Clear();
-                foreach (var item in paginated)
-                    Items.Add(item);
-            });
-        }
 
         protected bool? ShowDialog(Window dialog) => dialog.ShowDialog();
 

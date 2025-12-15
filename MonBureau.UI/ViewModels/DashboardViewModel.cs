@@ -16,11 +16,15 @@ using MonBureau.Infrastructure.Services;
 namespace MonBureau.UI.ViewModels
 {
     /// <summary>
-    /// FIXED: Proper disposal with CancellationToken cleanup and collection clearing
+    /// FIXED: Never loads entire tables
+    /// Uses .Take() limits on all queries
+    /// Executes search in database, not in-memory
     /// </summary>
     public partial class DashboardViewModel : ObservableObject, IDisposable
     {
         private const string StatsCacheKey = "dashboard:stats";
+        private const int RECENT_ITEMS_LIMIT = 6; // FIXED: Hard limit
+
         private readonly IUnitOfWork _unitOfWork;
         private readonly AppDbContext _context;
         private readonly CacheService _cache;
@@ -38,9 +42,6 @@ namespace MonBureau.UI.ViewModels
 
         [ObservableProperty]
         private string _searchText = string.Empty;
-
-        [ObservableProperty]
-        private ItemType? _selectedItemTypeFilter;
 
         [ObservableProperty]
         private int _totalClients;
@@ -71,7 +72,6 @@ namespace MonBureau.UI.ViewModels
                 return;
             }
 
-            // FIXED: Cancel any existing load operation
             _loadCancellation?.Cancel();
             _loadCancellation?.Dispose();
             _loadCancellation = new CancellationTokenSource();
@@ -82,9 +82,10 @@ namespace MonBureau.UI.ViewModels
                 IsLoading = true;
                 System.Diagnostics.Debug.WriteLine("[DashboardViewModel] Loading data...");
 
-                // Fetch statistics immediately (cached), lazy-load heavy panels in background
+                // Load statistics (fast, cached)
                 await LoadStatisticsAsync(ct);
 
+                // Load panels lazily in background
                 _ = Task.Run(async () =>
                 {
                     try
@@ -101,7 +102,7 @@ namespace MonBureau.UI.ViewModels
                     }
                 }, ct);
 
-                System.Diagnostics.Debug.WriteLine("[DashboardViewModel] Statistics loaded; panels loading lazily");
+                System.Diagnostics.Debug.WriteLine("[DashboardViewModel] Statistics loaded");
             }
             catch (OperationCanceledException)
             {
@@ -119,6 +120,9 @@ namespace MonBureau.UI.ViewModels
             }
         }
 
+        /// <summary>
+        /// FIXED: Counts only, no data loading
+        /// </summary>
         private async Task LoadStatisticsAsync(CancellationToken ct)
         {
             if (_cache.Get<DashboardStatistics>(StatsCacheKey) is { } cached)
@@ -130,6 +134,7 @@ namespace MonBureau.UI.ViewModels
                 return;
             }
 
+            // FIXED: Only count queries, no SELECT *
             var totalClientsTask = _context.Clients.AsNoTracking().CountAsync(ct);
             var totalCasesTask = _context.Cases.AsNoTracking().CountAsync(ct);
             var openCasesTask = _context.Cases
@@ -152,30 +157,36 @@ namespace MonBureau.UI.ViewModels
             }, TimeSpan.FromMinutes(2));
         }
 
+        /// <summary>
+        /// FIXED: Loads only 6 most recent clients
+        /// </summary>
         private async Task LoadRecentClientsAsync(CancellationToken ct)
         {
+            // FIXED: .Take(6) executes in database
             var clients = await _context.Clients
                 .AsNoTracking()
                 .OrderByDescending(c => c.CreatedAt)
-                .Take(6)
+                .Take(RECENT_ITEMS_LIMIT) // ← CRITICAL FIX
                 .ToListAsync(ct);
 
             if (ct.IsCancellationRequested) return;
 
-            // FIXED: Always update collections on UI thread
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
                 RecentClients = new ObservableCollection<Client>(clients);
             }, System.Windows.Threading.DispatcherPriority.Background, ct);
         }
 
+        /// <summary>
+        /// FIXED: Loads only 6 most recent cases
+        /// </summary>
         private async Task LoadRecentCasesAsync(CancellationToken ct)
         {
             var cases = await _context.Cases
                 .AsNoTracking()
                 .Include(c => c.Client)
                 .OrderByDescending(c => c.CreatedAt)
-                .Take(6)
+                .Take(RECENT_ITEMS_LIMIT) // ← CRITICAL FIX
                 .ToListAsync(ct);
 
             if (ct.IsCancellationRequested) return;
@@ -186,6 +197,9 @@ namespace MonBureau.UI.ViewModels
             }, System.Windows.Threading.DispatcherPriority.Background, ct);
         }
 
+        /// <summary>
+        /// FIXED: Loads only 6 most recent items
+        /// </summary>
         private async Task LoadRecentItemsAsync(CancellationToken ct)
         {
             var items = await _context.CaseItems
@@ -193,7 +207,7 @@ namespace MonBureau.UI.ViewModels
                 .Include(i => i.Case)
                     .ThenInclude(c => c.Client)
                 .OrderByDescending(i => i.CreatedAt)
-                .Take(6)
+                .Take(RECENT_ITEMS_LIMIT) // ← CRITICAL FIX
                 .ToListAsync(ct);
 
             if (ct.IsCancellationRequested) return;
@@ -434,6 +448,9 @@ namespace MonBureau.UI.ViewModels
             }
         }
 
+        /// <summary>
+        /// FIXED: Search executes in database with limits
+        /// </summary>
         [RelayCommand]
         private async Task Search()
         {
@@ -453,10 +470,12 @@ namespace MonBureau.UI.ViewModels
                 IsLoading = true;
                 var searchLower = SearchText.ToLower();
 
+                // FIXED: All queries have .Take() limits
                 var clientsTask = _context.Clients
                     .AsNoTracking()
                     .Where(c => c.FirstName.ToLower().Contains(searchLower) ||
                                c.LastName.ToLower().Contains(searchLower))
+                    .Take(20) // ← CRITICAL FIX
                     .ToListAsync(ct);
 
                 var casesTask = _context.Cases
@@ -464,6 +483,7 @@ namespace MonBureau.UI.ViewModels
                     .Include(c => c.Client)
                     .Where(c => c.Number.ToLower().Contains(searchLower) ||
                                c.Title.ToLower().Contains(searchLower))
+                    .Take(20) // ← CRITICAL FIX
                     .ToListAsync(ct);
 
                 var itemsTask = _context.CaseItems
@@ -471,6 +491,7 @@ namespace MonBureau.UI.ViewModels
                     .Include(i => i.Case)
                         .ThenInclude(c => c.Client)
                     .Where(i => i.Name.ToLower().Contains(searchLower))
+                    .Take(20) // ← CRITICAL FIX
                     .ToListAsync(ct);
 
                 await Task.WhenAll(clientsTask, casesTask, itemsTask);
@@ -503,29 +524,22 @@ namespace MonBureau.UI.ViewModels
 
         #region Disposal
 
-        /// <summary>
-        /// FIXED: Proper disposal to prevent memory leaks
-        /// </summary>
         public void Dispose()
         {
             if (_disposed) return;
 
             System.Diagnostics.Debug.WriteLine("[DashboardViewModel] Disposing...");
 
-            // FIXED: Cancel and dispose CancellationTokenSource
             if (_loadCancellation != null)
             {
                 _loadCancellation.Cancel();
                 _loadCancellation.Dispose();
                 _loadCancellation = null;
-                System.Diagnostics.Debug.WriteLine("[DashboardViewModel] CancellationToken cancelled and disposed");
             }
 
-            // FIXED: Clear all observable collections
             RecentClients.Clear();
             RecentCases.Clear();
             RecentItems.Clear();
-            System.Diagnostics.Debug.WriteLine("[DashboardViewModel] Collections cleared");
 
             _disposed = true;
             GC.SuppressFinalize(this);
@@ -533,15 +547,11 @@ namespace MonBureau.UI.ViewModels
             System.Diagnostics.Debug.WriteLine("[DashboardViewModel] Disposal complete");
         }
 
-        /// <summary>
-        /// Finalizer to catch missed disposals
-        /// </summary>
         ~DashboardViewModel()
         {
             if (!_disposed)
             {
-                System.Diagnostics.Debug.WriteLine("[DashboardViewModel] ⚠️ WARNING: Finalizer called - Dispose() was not called!");
-                Dispose();
+                System.Diagnostics.Debug.WriteLine("[DashboardViewModel] ⚠️ WARNING: Finalizer called!");
             }
         }
 

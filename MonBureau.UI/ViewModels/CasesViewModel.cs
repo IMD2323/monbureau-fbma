@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq.Expressions;
 using System.Windows;
 using MonBureau.Core.Entities;
 using MonBureau.Core.Interfaces;
@@ -8,8 +9,7 @@ using MonBureau.UI.Views.Dialogs;
 namespace MonBureau.UI.ViewModels
 {
     /// <summary>
-    /// FIXED: Simplified CasesViewModel
-    /// All CRUD logic inherited from CrudViewModelBase
+    /// FIXED: Database-level filtering for Cases
     /// </summary>
     public class CasesViewModel : CrudViewModelBase<Case>
     {
@@ -21,17 +21,25 @@ namespace MonBureau.UI.ViewModels
         protected override IRepository<Case> GetRepository()
             => _unitOfWork.Cases;
 
-        protected override void ApplyFilter()
+        /// <summary>
+        /// FIXED: Executes in database as SQL WHERE clause
+        /// Includes related Client data in filter
+        /// </summary>
+        protected override Expression<Func<Case, bool>>? BuildFilterExpression(string searchText)
         {
-            var filtered = FilterByProperties(
-                _allItems,
-                c => c.Number,
-                c => c.Title,
-                c => c.Client?.FullName,
-                c => c.Description
-            ).OrderByDescending(c => c.OpeningDate);
+            if (string.IsNullOrWhiteSpace(searchText))
+                return null;
 
-            RefreshItemsCollection(filtered);
+            var lowerSearch = searchText.ToLowerInvariant();
+
+            // Entity Framework translates this to SQL JOIN + WHERE
+            return c =>
+                (c.Number != null && c.Number.ToLower().Contains(lowerSearch)) ||
+                (c.Title != null && c.Title.ToLower().Contains(lowerSearch)) ||
+                (c.Description != null && c.Description.ToLower().Contains(lowerSearch)) ||
+                (c.Client != null &&
+                    ((c.Client.FirstName != null && c.Client.FirstName.ToLower().Contains(lowerSearch)) ||
+                     (c.Client.LastName != null && c.Client.LastName.ToLower().Contains(lowerSearch))));
         }
 
         protected override Window CreateAddDialog()

@@ -10,8 +10,8 @@ using MonBureau.Infrastructure.Data;
 namespace MonBureau.Infrastructure.Repositories
 {
     /// <summary>
-    /// SIMPLIFIED: Generic repository with optional eager loading configuration
-    /// Removes need for specialized CaseRepository and CaseItemRepository
+    /// FIXED: Never loads entire table - always uses pagination
+    /// Executes filtering in database (SQL) instead of in-memory
     /// </summary>
     public class Repository<T> : IRepository<T> where T : class
     {
@@ -26,45 +26,57 @@ namespace MonBureau.Infrastructure.Repositories
 
         public virtual async Task<T?> GetByIdAsync(int id)
         {
-            // Use FindAsync for single entity retrieval (tracks by default for updates)
             return await _dbSet.FindAsync(id);
         }
 
         /// <summary>
-        /// OPTIMIZED: Uses AsNoTracking for read-only queries (20-30% faster)
-        /// Includes related entities automatically based on entity type
+        /// DEPRECATED - Use GetPagedAsync instead
+        /// This method is dangerous for large datasets
         /// </summary>
+        [Obsolete("Use GetPagedAsync to avoid loading entire table")]
         public virtual async Task<IEnumerable<T>> GetAllAsync()
         {
+            System.Diagnostics.Debug.WriteLine("[Repository] ⚠️ WARNING: GetAllAsync called - use GetPagedAsync instead");
+
+            // FIXED: Still limit to prevent catastrophic memory usage
             var query = ApplyIncludes(_dbSet.AsNoTracking());
-            return await query.ToListAsync();
+            return await query.Take(1000).ToListAsync(); // Safety limit
         }
 
         /// <summary>
-        /// OPTIMIZED: Uses AsNoTracking for filtered queries
+        /// DEPRECATED - Use GetPagedAsync with filter instead
         /// </summary>
+        [Obsolete("Use GetPagedAsync with filter parameter")]
         public virtual async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
         {
+            System.Diagnostics.Debug.WriteLine("[Repository] ⚠️ WARNING: FindAsync called - use GetPagedAsync with filter");
+
             var query = ApplyIncludes(_dbSet.AsNoTracking());
-            return await query.Where(predicate).ToListAsync();
+            return await query.Where(predicate).Take(1000).ToListAsync(); // Safety limit
         }
 
         /// <summary>
-        /// OPTIMIZED: Paged queries for large datasets
-        /// Performance: Loads only required page instead of entire table
+        /// FIXED: Primary method - Always use pagination
+        /// Executes filtering in database (SQL Server/SQLite)
         /// </summary>
         public virtual async Task<IEnumerable<T>> GetPagedAsync(
             int skip,
             int take,
             Expression<Func<T, bool>>? filter = null)
         {
+            // Validate pagination parameters
+            if (skip < 0) skip = 0;
+            if (take <= 0 || take > 1000) take = 50; // Max 1000 per page
+
             IQueryable<T> query = ApplyIncludes(_dbSet.AsNoTracking());
 
+            // Apply filter in database
             if (filter != null)
             {
                 query = query.Where(filter);
             }
 
+            // Execute pagination in database
             return await query
                 .Skip(skip)
                 .Take(take)
@@ -83,7 +95,6 @@ namespace MonBureau.Infrastructure.Repositories
         {
             if (entity == null) throw new ArgumentNullException(nameof(entity));
 
-            // Attach and mark as modified only if not already tracked
             var entry = _context.Entry(entity);
             if (entry.State == EntityState.Detached)
             {
@@ -98,7 +109,6 @@ namespace MonBureau.Infrastructure.Repositories
         {
             if (entity == null) throw new ArgumentNullException(nameof(entity));
 
-            // Attach entity if not tracked, then remove
             var entry = _context.Entry(entity);
             if (entry.State == EntityState.Detached)
             {
@@ -110,7 +120,7 @@ namespace MonBureau.Infrastructure.Repositories
         }
 
         /// <summary>
-        /// OPTIMIZED: Count all entities
+        /// FIXED: Count all entities efficiently
         /// </summary>
         public virtual async Task<int> CountAsync()
         {
@@ -120,7 +130,7 @@ namespace MonBureau.Infrastructure.Repositories
         }
 
         /// <summary>
-        /// OPTIMIZED: Count with filter
+        /// FIXED: Count with filter - executes in database
         /// </summary>
         public virtual async Task<int> CountAsync(Expression<Func<T, bool>>? filter)
         {
@@ -136,31 +146,25 @@ namespace MonBureau.Infrastructure.Repositories
         }
 
         /// <summary>
-        /// NEW: Automatically applies appropriate includes based on entity type
-        /// This replaces the need for specialized repositories
+        /// Applies appropriate includes based on entity type
         /// </summary>
         protected virtual IQueryable<T> ApplyIncludes(IQueryable<T> query)
         {
             var entityType = typeof(T).Name;
 
-            // Use AsSplitQuery to prevent cartesian explosion
             return entityType switch
             {
-                // Case includes Client
                 "Case" => query
                     .Include("Client")
                     .AsSplitQuery(),
 
-                // CaseItem includes Case and nested Client
                 "CaseItem" => query
                     .Include("Case")
                     .Include("Case.Client")
                     .AsSplitQuery(),
 
-                // Client has no required includes
                 "Client" => query,
 
-                // Default: no includes
                 _ => query
             };
         }

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -15,14 +14,16 @@ using MonBureau.Infrastructure.Data;
 namespace MonBureau.UI.ViewModels
 {
     /// <summary>
-    /// DocumentsViewModel - Manages document listing and operations
-    /// Follows same architecture as DashboardViewModel, ClientsViewModel, etc.
+    /// FIXED: Paginated document loading
+    /// No more loading all documents from all cases
     /// </summary>
     public partial class DocumentsViewModel : ObservableObject, IDisposable
     {
         private readonly AppDbContext _context;
         private CancellationTokenSource? _loadCancellation;
         private bool _disposed;
+
+        private const int PAGE_SIZE = 50; // Documents per page
 
         #region Observable Properties
 
@@ -37,6 +38,12 @@ namespace MonBureau.UI.ViewModels
 
         [ObservableProperty]
         private int totalDocuments;
+
+        [ObservableProperty]
+        private int currentPage = 1;
+
+        [ObservableProperty]
+        private int totalPages;
 
         [ObservableProperty]
         private CaseItem? selectedDocument;
@@ -59,11 +66,10 @@ namespace MonBureau.UI.ViewModels
         {
             if (_disposed)
             {
-                System.Diagnostics.Debug.WriteLine("[DocumentsViewModel] Already disposed, skipping initialization");
+                System.Diagnostics.Debug.WriteLine("[DocumentsViewModel] Already disposed");
                 return;
             }
 
-            // Cancel any existing load operation
             _loadCancellation?.Cancel();
             _loadCancellation?.Dispose();
             _loadCancellation = new CancellationTokenSource();
@@ -74,9 +80,9 @@ namespace MonBureau.UI.ViewModels
                 IsLoading = true;
                 System.Diagnostics.Debug.WriteLine("[DocumentsViewModel] Loading documents...");
 
-                await LoadDocumentsAsync(ct);
+                await LoadDocumentsPageAsync(ct);
 
-                System.Diagnostics.Debug.WriteLine($"[DocumentsViewModel] ✅ Loaded {TotalDocuments} documents");
+                System.Diagnostics.Debug.WriteLine($"[DocumentsViewModel] ✅ Loaded page {CurrentPage}/{TotalPages}");
             }
             catch (OperationCanceledException)
             {
@@ -97,25 +103,62 @@ namespace MonBureau.UI.ViewModels
             }
         }
 
-        private async Task LoadDocumentsAsync(CancellationToken ct)
+        /// <summary>
+        /// FIXED: Loads only one page of documents
+        /// Applies filter in database
+        /// </summary>
+        private async Task LoadDocumentsPageAsync(CancellationToken ct)
         {
-            // Load all documents with related case and client info
-            var documents = await _context.CaseItems
+            // Build base query
+            var query = _context.CaseItems
                 .AsNoTracking()
                 .Include(i => i.Case)
                     .ThenInclude(c => c.Client)
-                .Where(i => i.Type == ItemType.Document)
+                .Where(i => i.Type == ItemType.Document);
+
+            // Apply search filter in database
+            if (!string.IsNullOrWhiteSpace(SearchFilter))
+            {
+                var lowerFilter = SearchFilter.ToLowerInvariant();
+                query = query.Where(i =>
+                    (i.Name != null && i.Name.ToLower().Contains(lowerFilter)) ||
+                    (i.Description != null && i.Description.ToLower().Contains(lowerFilter)) ||
+                    (i.Case != null && i.Case.Number != null && i.Case.Number.ToLower().Contains(lowerFilter)) ||
+                    (i.Case != null && i.Case.Title != null && i.Case.Title.ToLower().Contains(lowerFilter)) ||
+                    (i.Case != null && i.Case.Client != null &&
+                        ((i.Case.Client.FirstName != null && i.Case.Client.FirstName.ToLower().Contains(lowerFilter)) ||
+                         (i.Case.Client.LastName != null && i.Case.Client.LastName.ToLower().Contains(lowerFilter)))));
+            }
+
+            // Count total (in database)
+            TotalDocuments = await query.CountAsync(ct);
+            TotalPages = (int)Math.Ceiling((double)TotalDocuments / PAGE_SIZE);
+
+            // Validate current page
+            if (CurrentPage > TotalPages && TotalPages > 0)
+            {
+                CurrentPage = TotalPages;
+            }
+
+            // Load current page (in database)
+            var skip = (CurrentPage - 1) * PAGE_SIZE;
+            var documents = await query
                 .OrderByDescending(i => i.Date)
                 .ThenByDescending(i => i.CreatedAt)
+                .Skip(skip)
+                .Take(PAGE_SIZE) // ← CRITICAL FIX
                 .ToListAsync(ct);
 
             if (ct.IsCancellationRequested) return;
 
-            // Update UI on dispatcher thread
+            // Update UI
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
                 Documents = new ObservableCollection<CaseItem>(documents);
-                TotalDocuments = documents.Count;
+
+                System.Diagnostics.Debug.WriteLine(
+                    $"[DocumentsViewModel] Page {CurrentPage}/{TotalPages} - {Documents.Count} documents"
+                );
             }, System.Windows.Threading.DispatcherPriority.Background, ct);
         }
 
@@ -123,42 +166,17 @@ namespace MonBureau.UI.ViewModels
 
         #region Search & Filter
 
+        /// <summary>
+        /// FIXED: Triggers database query instead of client-side filter
+        /// </summary>
         partial void OnSearchFilterChanged(string value)
         {
             if (_disposed) return;
 
             System.Diagnostics.Debug.WriteLine($"[DocumentsViewModel] Search filter changed: {value}");
 
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                // Reload all documents
-                _ = InitializeAsync();
-                return;
-            }
-
-            try
-            {
-                var lowerFilter = value.ToLowerInvariant();
-
-                // Client-side filtering for better performance
-                var allDocs = Documents.ToList();
-                var filtered = allDocs
-                    .Where(d =>
-                        (d.Name?.ToLowerInvariant().Contains(lowerFilter) ?? false) ||
-                        (d.Description?.ToLowerInvariant().Contains(lowerFilter) ?? false) ||
-                        (d.Case?.Number?.ToLowerInvariant().Contains(lowerFilter) ?? false) ||
-                        (d.Case?.Title?.ToLowerInvariant().Contains(lowerFilter) ?? false) ||
-                        (d.Case?.Client?.FullName?.ToLowerInvariant().Contains(lowerFilter) ?? false))
-                    .ToList();
-
-                Documents = new ObservableCollection<CaseItem>(filtered);
-                TotalDocuments = filtered.Count;
-                System.Diagnostics.Debug.WriteLine($"[DocumentsViewModel] Filtered to {TotalDocuments} documents");
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[DocumentsViewModel] Filter error: {ex.Message}");
-            }
+            CurrentPage = 1; // Reset to first page
+            _ = InitializeAsync(); // Reload with filter
         }
 
         #endregion
@@ -171,8 +189,25 @@ namespace MonBureau.UI.ViewModels
             if (_disposed) return;
 
             System.Diagnostics.Debug.WriteLine("[DocumentsViewModel] Refresh requested");
-            SearchFilter = string.Empty; // Clear filter
             await InitializeAsync();
+        }
+
+        [RelayCommand]
+        private void NextPage()
+        {
+            if (_disposed || CurrentPage >= TotalPages) return;
+
+            CurrentPage++;
+            _ = InitializeAsync();
+        }
+
+        [RelayCommand]
+        private void PreviousPage()
+        {
+            if (_disposed || CurrentPage <= 1) return;
+
+            CurrentPage--;
+            _ = InitializeAsync();
         }
 
         [RelayCommand]
@@ -180,7 +215,7 @@ namespace MonBureau.UI.ViewModels
         {
             if (_disposed || document == null)
             {
-                System.Diagnostics.Debug.WriteLine("[DocumentsViewModel] Cannot open document - disposed or null");
+                System.Diagnostics.Debug.WriteLine("[DocumentsViewModel] Cannot open document");
                 return;
             }
 
@@ -205,7 +240,7 @@ namespace MonBureau.UI.ViewModels
                         FileName = document.FilePath,
                         UseShellExecute = true
                     });
-                    System.Diagnostics.Debug.WriteLine($"[DocumentsViewModel] ✅ Document opened successfully");
+                    System.Diagnostics.Debug.WriteLine($"[DocumentsViewModel] ✅ Document opened");
                 }
                 else
                 {
@@ -233,13 +268,12 @@ namespace MonBureau.UI.ViewModels
         {
             if (_disposed || document?.Case == null)
             {
-                System.Diagnostics.Debug.WriteLine("[DocumentsViewModel] Cannot view case - disposed or null");
+                System.Diagnostics.Debug.WriteLine("[DocumentsViewModel] Cannot view case");
                 return;
             }
 
             System.Diagnostics.Debug.WriteLine($"[DocumentsViewModel] Viewing case: {document.Case.Number}");
 
-            // Open case dialog for viewing/editing
             try
             {
                 var dialog = new Views.Dialogs.CaseDialog(document.Case);
@@ -268,18 +302,14 @@ namespace MonBureau.UI.ViewModels
 
             try
             {
-                // Cancel and dispose CancellationTokenSource
                 if (_loadCancellation != null)
                 {
                     _loadCancellation.Cancel();
                     _loadCancellation.Dispose();
                     _loadCancellation = null;
-                    System.Diagnostics.Debug.WriteLine("[DocumentsViewModel] CancellationToken disposed");
                 }
 
-                // Clear collections
                 Documents.Clear();
-                System.Diagnostics.Debug.WriteLine("[DocumentsViewModel] Collections cleared");
 
                 _disposed = true;
                 GC.SuppressFinalize(this);
@@ -296,8 +326,7 @@ namespace MonBureau.UI.ViewModels
         {
             if (!_disposed)
             {
-                System.Diagnostics.Debug.WriteLine("[DocumentsViewModel] ⚠️ WARNING: Finalizer called - Dispose() not called!");
-                Dispose();
+                System.Diagnostics.Debug.WriteLine("[DocumentsViewModel] ⚠️ WARNING: Finalizer called!");
             }
         }
 

@@ -20,7 +20,7 @@ using MonBureau.UI.ViewModels;
 namespace MonBureau.UI
 {
     /// <summary>
-    /// FIXED: Proper DEBUG/RELEASE mode handling for Firebase and database encryption
+    /// RELEASE VERSION - Production-ready with proper Firebase configuration
     /// </summary>
     public partial class App : Application
     {
@@ -40,26 +40,17 @@ namespace MonBureau.UI
         {
             base.OnStartup(e);
 
-            System.Diagnostics.Debug.WriteLine("[App] ========================================");
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine("[App] MonBureau Starting (DEBUG MODE)");
-#else
-            System.Diagnostics.Debug.WriteLine("[App] MonBureau Starting (RELEASE MODE)");
-#endif
-            System.Diagnostics.Debug.WriteLine("[App] ========================================");
-
             // Setup global exception handlers
             SetupExceptionHandlers();
 
-            // Initialize security (simplified for DEBUG mode)
+            // Initialize security
             if (!InitializeSecurity())
             {
-                System.Diagnostics.Debug.WriteLine("[App] Security initialization failed - exiting");
                 Shutdown(1);
                 return;
             }
 
-            // Initialize Firebase (DEBUG or RELEASE mode)
+            // Initialize Firebase
             InitializeFirebase();
 
             // Configure dependency injection
@@ -72,50 +63,19 @@ namespace MonBureau.UI
 
             // Initialize auto-backup
             InitializeAutoBackup();
-
-            System.Diagnostics.Debug.WriteLine("[App] ✓ Application initialized successfully");
         }
 
         // ============================================
-        // Security Initialization (DEBUG/RELEASE aware)
+        // Security Initialization
         // ============================================
 
         private bool InitializeSecurity()
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine("[Security] Initializing security features...");
-
-#if DEBUG
-                System.Diagnostics.Debug.WriteLine("[Security] ⚠️ DEBUG MODE - Relaxed security checks");
-
-                // Skip debugger check in DEBUG mode
+                // Check for debugger (warning only)
                 if (System.Diagnostics.Debugger.IsAttached)
                 {
-                    System.Diagnostics.Debug.WriteLine("[Security] ✓ Debugger detected (DEBUG mode - allowed)");
-                }
-
-                // Database encryption is OPTIONAL in DEBUG mode
-                if (!SecureCredentialManager.CredentialExists("Database_EncryptionKey"))
-                {
-                    System.Diagnostics.Debug.WriteLine("[Security] ⚠️ DEBUG MODE - No encryption key found");
-                    System.Diagnostics.Debug.WriteLine("[Security] Database will run WITHOUT encryption");
-                    System.Diagnostics.Debug.WriteLine("[Security] This is OK for DEBUG builds");
-                }
-                else
-                {
-                    System.Diagnostics.Debug.WriteLine("[Security] ✓ Database encryption key found");
-                }
-
-#else
-                // RELEASE MODE - Strict security
-                System.Diagnostics.Debug.WriteLine("[Security] RELEASE MODE - Full security checks enabled");
-
-                // Check for debugger (warning in RELEASE)
-                if (System.Diagnostics.Debugger.IsAttached)
-                {
-                    System.Diagnostics.Debug.WriteLine("[Security] ⚠ Debugger detected");
-
                     var result = MessageBox.Show(
                         "Un débogueur a été détecté. Cela peut affecter la sécurité de l'application.\n\n" +
                         "Continuer quand même?",
@@ -129,11 +89,9 @@ namespace MonBureau.UI
                     }
                 }
 
-                // Database encryption is REQUIRED in RELEASE mode
+                // Ensure database encryption key exists
                 if (!SecureCredentialManager.CredentialExists("Database_EncryptionKey"))
                 {
-                    System.Diagnostics.Debug.WriteLine("[Security] ❌ RELEASE MODE - Encryption key required but not found");
-
                     // Generate encryption key automatically
                     var newKey = GenerateEncryptionKey();
 
@@ -153,21 +111,12 @@ namespace MonBureau.UI
                             MessageBoxImage.Error);
                         return false;
                     }
-
-                    System.Diagnostics.Debug.WriteLine("[Security] ✓ Encryption key generated and stored");
                 }
-                else
-                {
-                    System.Diagnostics.Debug.WriteLine("[Security] ✓ Database encryption key found");
-                }
-#endif
 
-                System.Diagnostics.Debug.WriteLine("[Security] ✓ Security initialization complete");
                 return true;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[Security] ✗ Security initialization failed: {ex.Message}");
                 LogError(ex);
 
                 MessageBox.Show(
@@ -192,57 +141,17 @@ namespace MonBureau.UI
         }
 
         // ============================================
-        // Firebase Initialization (DEBUG/RELEASE aware)
+        // Firebase Initialization
         // ============================================
 
         private void InitializeFirebase()
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine("[Firebase] Initializing...");
-
-#if DEBUG
-                // DEBUG MODE: Use FirebaseDebugConfig with embedded credentials
-                System.Diagnostics.Debug.WriteLine("[Firebase] ⚠️ DEBUG MODE - Using embedded credentials");
-
-                if (!FirebaseDebugConfig.AreCredentialsConfigured())
-                {
-                    System.Diagnostics.Debug.WriteLine("[Firebase] ❌ Credentials not configured in FirebaseDebugConfig.cs");
-
-                    var result = MessageBox.Show(
-                        "❌ Firebase non configuré (DEBUG MODE)\n\n" +
-                        "Pour activer Firebase en DEBUG:\n" +
-                        "1. Ouvrez MonBureau.Infrastructure/Services/Firebase/FirebaseDebugConfig.cs\n" +
-                        "2. Remplacez les valeurs placeholder par vos vraies credentials Firebase\n" +
-                        "3. Redémarrez l'application\n\n" +
-                        "L'application fonctionnera en mode hors ligne.\n\n" +
-                        "Continuer sans Firebase?",
-                        "Configuration Firebase (DEBUG)",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Information);
-
-                    if (result == MessageBoxResult.No)
-                    {
-                        Shutdown(0);
-                        return;
-                    }
-
-                    System.Diagnostics.Debug.WriteLine("[Firebase] Running in offline mode (DEBUG)");
-                    return;
-                }
-
-                // Initialize Firebase with debug credentials
-                FirebaseDebugConfig.InitializeDebug();
-                System.Diagnostics.Debug.WriteLine("[Firebase] ✅ Initialized successfully (DEBUG MODE)");
-#else
-                // RELEASE MODE: Use FirebaseConfig with Windows Credential Manager
-                System.Diagnostics.Debug.WriteLine("[Firebase] RELEASE MODE - Using Windows Credential Manager");
-
                 if (!FirebaseConfig.AreCredentialsConfigured())
                 {
-                    System.Diagnostics.Debug.WriteLine("[Firebase] ⚠ Credentials not configured");
-
                     var result = MessageBox.Show(
+                        "⚠️ Firebase non configuré\n\n" +
                         "Les identifiants Firebase ne sont pas configurés.\n\n" +
                         "Fonctionnalités affectées:\n" +
                         "• Validation de licence en ligne\n" +
@@ -259,25 +168,21 @@ namespace MonBureau.UI
                         ShowFirebaseSetupInstructions();
                     }
 
-                    System.Diagnostics.Debug.WriteLine("[Firebase] Running in offline mode");
                     return;
                 }
 
                 // Initialize Firebase
                 FirebaseConfig.Initialize();
-                System.Diagnostics.Debug.WriteLine("[Firebase] ✓ Initialized successfully (RELEASE MODE)");
-#endif
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[Firebase] ✗ Initialization failed: {ex.Message}");
                 LogError(ex);
 
                 MessageBox.Show(
                     "Échec de l'initialisation des fonctionnalités cloud.\n" +
                     "L'application fonctionnera en mode hors ligne.\n\n" +
                     "Pour activer les fonctionnalités cloud:\n" +
-                    "1. Configurez Firebase dans les paramètres\n" +
+                    "1. Exécutez SetupCredentials.ps1\n" +
                     "2. Redémarrez l'application",
                     "Mode Hors Ligne",
                     MessageBoxButton.OK,
@@ -449,8 +354,6 @@ namespace MonBureau.UI
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine("[Database] Initializing...");
-
                 using var scope = _serviceProvider?.CreateScope();
                 if (scope != null)
                 {
@@ -458,13 +361,8 @@ namespace MonBureau.UI
 
                     // Ensure database is created
                     context.Database.EnsureCreated();
-                    System.Diagnostics.Debug.WriteLine("[Database] ✓ Database created/verified");
 
-#if DEBUG
-                    // DEBUG MODE: Skip encryption verification
-                    System.Diagnostics.Debug.WriteLine("[Database] ⚠️ DEBUG MODE - Skipping encryption verification");
-#else
-                    // RELEASE MODE: Verify encryption
+                    // Verify encryption
                     bool encryptionVerified = AppDbContext.VerifyEncryption();
                     if (!encryptionVerified)
                     {
@@ -472,17 +370,13 @@ namespace MonBureau.UI
                             "Database encryption verification failed"
                         );
                     }
-                    System.Diagnostics.Debug.WriteLine("[Database] ✓ Encryption verified");
-#endif
 
                     // Seed database if empty
                     SeedDatabaseIfEmpty(context);
-                    System.Diagnostics.Debug.WriteLine("[Database] ✓ Initialization complete");
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[Database] ✗ Initialization failed: {ex.Message}");
                 LogError(ex);
 
                 MessageBox.Show(
@@ -508,20 +402,10 @@ namespace MonBureau.UI
             try
             {
                 _autoBackupService = _serviceProvider?.GetService<AutoBackupService>();
-
-                if (_autoBackupService != null)
-                {
-                    var settings = _autoBackupService.GetSettings();
-                    System.Diagnostics.Debug.WriteLine(
-                        $"[AutoBackup] Initialized. Enabled: {settings.Enabled}, " +
-                        $"Interval: {settings.IntervalType}, " +
-                        $"Last backup: {settings.LastBackupDate:yyyy-MM-dd HH:mm}");
-                }
             }
             catch (Exception ex)
             {
                 LogError(ex);
-                System.Diagnostics.Debug.WriteLine($"[AutoBackup] Failed to initialize: {ex.Message}");
             }
         }
 
@@ -533,8 +417,6 @@ namespace MonBureau.UI
         {
             if (!context.Clients.Any())
             {
-                System.Diagnostics.Debug.WriteLine("[Database] Seeding initial data...");
-
                 var client1 = new Client
                 {
                     FirstName = "Ahmed",
@@ -615,8 +497,6 @@ namespace MonBureau.UI
 
                 context.CaseItems.AddRange(doc1, expense1);
                 context.SaveChanges();
-
-                System.Diagnostics.Debug.WriteLine("[Database] ✓ Initial data seeded");
             }
         }
 
@@ -626,8 +506,6 @@ namespace MonBureau.UI
 
         protected override void OnExit(ExitEventArgs e)
         {
-            System.Diagnostics.Debug.WriteLine("[App] Application exiting...");
-
             _autoBackupService?.Dispose();
             _autoBackupService = null;
 
@@ -637,7 +515,6 @@ namespace MonBureau.UI
                 _serviceProvider = null;
             }
 
-            System.Diagnostics.Debug.WriteLine("[App] ✓ Cleanup complete");
             base.OnExit(e);
         }
 

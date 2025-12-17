@@ -9,11 +9,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <Compile Remove="Integration\**" />
 	  <Compile Remove="Validators\**" />
-	  <EmbeddedResource Remove="Integration\**" />
 	  <EmbeddedResource Remove="Validators\**" />
-	  <None Remove="Integration\**" />
 	  <None Remove="Validators\**" />
 	</ItemGroup>
 

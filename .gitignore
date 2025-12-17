@@ -389,3 +389,81 @@ Backup_*/
 bin/Obfuscated/
 Release/
 *.bak
+
+
+# ============================================================
+# MonBureau .gitignore
+# ============================================================
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.sln.docstates
+*.cache
+*.log
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# NuGet
+*.nupkg
+**/packages/*
+!**/packages/build/
+*.nuget.props
+*.nuget.targets
+
+# Firebase Configuration
+# ⚠️ CRITICAL: Never commit Firebase credentials
+**/FirebaseDebugConfig.cs
+**/firebase-adminsdk*.json
+Config/monbureau-licenses-firebase-adminsdk.json
+
+# Local database
+*.db
+*.db-shm
+*.db-wal
+
+# Backups
+Backups/
+*.zip
+
+# User-specific files
+*.user
+*.userosscache
+*.sln.docstates
+
+# Rider
+.idea/
+*.sln.iml
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
+# Publish profiles
+*.pubxml
+*.azurePubxml
+
+# ConfuserEx
+bin/Obfuscated/
+tools/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*~

@@ -78,9 +78,10 @@ function Store-SecureCredential {
 Write-Header "MonBureau Secure Credentials Setup"
 
 # Check admin privileges
-$isAdmin = ([Security.Principal.WindowsPrincipal]
-    [Security.Principal.WindowsIdentity]::GetCurrent()
-).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+$identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+$principal = New-Object Security.Principal.WindowsPrincipal($identity)
+$isAdmin = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+
 
 if (-not $isAdmin) {
     Write-Warning "Running without administrator privileges"

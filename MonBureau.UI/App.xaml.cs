@@ -20,7 +20,7 @@ using MonBureau.UI.ViewModels;
 namespace MonBureau.UI
 {
     /// <summary>
-    /// RELEASE VERSION - Production-ready with proper Firebase configuration
+    /// RELEASE VERSION - Production-ready with Firebase Web SDK
     /// </summary>
     public partial class App : Application
     {
@@ -50,7 +50,7 @@ namespace MonBureau.UI
                 return;
             }
 
-            // Initialize Firebase
+            // Initialize Firebase Web SDK
             InitializeFirebase();
 
             // Configure dependency injection
@@ -141,7 +141,7 @@ namespace MonBureau.UI
         }
 
         // ============================================
-        // Firebase Initialization
+        // Firebase Web SDK Initialization
         // ============================================
 
         private void InitializeFirebase()
@@ -152,7 +152,7 @@ namespace MonBureau.UI
                 {
                     var result = MessageBox.Show(
                         "⚠️ Firebase non configuré\n\n" +
-                        "Les identifiants Firebase ne sont pas configurés.\n\n" +
+                        "Les identifiants Firebase Web SDK ne sont pas configurés.\n\n" +
                         "Fonctionnalités affectées:\n" +
                         "• Validation de licence en ligne\n" +
                         "• Synchronisation cloud\n\n" +
@@ -171,8 +171,19 @@ namespace MonBureau.UI
                     return;
                 }
 
-                // Initialize Firebase
-                FirebaseConfig.Initialize();
+                // Initialize Firebase Web SDK
+                bool initialized = FirebaseConfig.Initialize();
+
+                if (!initialized)
+                {
+                    MessageBox.Show(
+                        "Échec de l'initialisation Firebase.\n" +
+                        "L'application fonctionnera en mode hors ligne.\n\n" +
+                        $"Erreur: {FirebaseConfig.InitializationError}",
+                        "Mode Hors Ligne",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
             }
             catch (Exception ex)
             {
@@ -193,16 +204,17 @@ namespace MonBureau.UI
         private void ShowFirebaseSetupInstructions()
         {
             MessageBox.Show(
-                "Configuration Firebase:\n\n" +
+                "Configuration Firebase Web SDK:\n\n" +
                 "1. Ouvrez PowerShell en tant qu'administrateur\n" +
                 "2. Naviguez vers le dossier de l'application\n" +
                 "3. Exécutez: .\\SetupCredentials.ps1\n" +
                 "4. Suivez les instructions\n" +
                 "5. Redémarrez l'application\n\n" +
                 "Vous aurez besoin de:\n" +
+                "• Firebase API Key (Console Firebase)\n" +
                 "• Firebase Project ID\n" +
-                "• Service Account Email\n" +
-                "• Private Key (fichier JSON)",
+                "• (Optionnel) Database URL\n\n" +
+                "Documentation: https://firebase.google.com/docs/web/setup",
                 "Instructions de Configuration",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
@@ -324,10 +336,7 @@ namespace MonBureau.UI
 
             services.AddSingleton<DpapiService>();
             services.AddSingleton<DeviceIdentifier>();
-            services.AddSingleton<FirestoreLicenseService>(sp =>
-            {
-                return new FirestoreLicenseService("monbureau-licenses");
-            });
+            services.AddSingleton<FirestoreLicenseService>();
             services.AddSingleton<SecureLicenseStorage>();
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddSingleton<CacheService>();

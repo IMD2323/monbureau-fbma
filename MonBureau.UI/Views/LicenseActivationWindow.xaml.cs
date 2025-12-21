@@ -22,7 +22,7 @@ namespace MonBureau.UI.Views
 
             _licenseStorage = new SecureLicenseStorage();
             _deviceIdentifier = new DeviceIdentifier();
-            _licenseService = new FirestoreLicenseService("monbureau-licenses");
+            _licenseService = new FirestoreLicenseService(); // ✅ FIXED: No constructor parameter
             _deviceId = string.Empty;
 
             Loaded += OnLoaded;
@@ -49,14 +49,14 @@ namespace MonBureau.UI.Views
                 if (!FirebaseConfig.IsInitialized)
                 {
                     ShowStatus(
-                        "⚠️ Firebase non initialisé. La validation en ligne n'est pas disponible.",
+                        "⚠️ Firebase non initialisé. Exécutez SetupCredentials.ps1 pour configurer.",
                         true
                     );
                 }
                 else if (!_licenseService.IsOnline)
                 {
                     ShowStatus(
-                        "⚠️ Service de licences hors ligne. Certaines fonctionnalités sont limitées.",
+                        "⚠️ Service de licences hors ligne. Vérifiez votre connexion Internet.",
                         true
                     );
                 }
@@ -96,9 +96,25 @@ namespace MonBureau.UI.Views
                 // Check if Firebase is available
                 if (!FirebaseConfig.IsInitialized)
                 {
+                    var result = MessageBox.Show(
+                        "Firebase non configuré\n\n" +
+                        "Les identifiants Firebase ne sont pas configurés.\n\n" +
+                        "Pour configurer Firebase:\n" +
+                        "1. Ouvrez PowerShell en tant qu'administrateur\n" +
+                        "2. Naviguez vers le dossier de l'application\n" +
+                        "3. Exécutez: .\\SetupCredentials.ps1\n\n" +
+                        "Voulez-vous continuer sans Firebase? (Mode hors ligne uniquement)",
+                        "Configuration Requise",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Warning);
+
+                    if (result != MessageBoxResult.Yes)
+                    {
+                        return;
+                    }
+
                     ShowStatus(
-                        "❌ Firebase non disponible.\n\n" +
-                        "Vérifiez que le fichier de configuration Firebase est présent dans le dossier Config.",
+                        "⚠️ Activation impossible sans Firebase. Veuillez configurer Firebase d'abord.",
                         true
                     );
                     return;
@@ -108,7 +124,7 @@ namespace MonBureau.UI.Views
                 {
                     ShowStatus(
                         "❌ Service de licences hors ligne.\n\n" +
-                        "Impossible d'activer une licence sans connexion au serveur.",
+                        "Vérifiez votre connexion Internet et réessayez.",
                         true
                     );
                     return;
@@ -161,7 +177,7 @@ namespace MonBureau.UI.Views
                 else
                 {
                     System.Diagnostics.Debug.WriteLine($"[LicenseActivationWindow] ❌ Activation failed: {message}");
-                    ShowStatus(message, true);
+                    ShowStatus($"❌ {message}", true);
                 }
             }
             catch (Exception ex)
@@ -170,7 +186,7 @@ namespace MonBureau.UI.Views
                 System.Diagnostics.Debug.WriteLine($"[LicenseActivationWindow]    Message: {ex.Message}");
                 System.Diagnostics.Debug.WriteLine($"[LicenseActivationWindow]    StackTrace: {ex.StackTrace}");
 
-                ShowStatus($"Erreur: {ex.Message}", true);
+                ShowStatus($"❌ Erreur: {ex.Message}", true);
             }
             finally
             {
@@ -204,14 +220,14 @@ namespace MonBureau.UI.Views
             // Validate email
             if (string.IsNullOrWhiteSpace(email))
             {
-                errorMessage = "Veuillez entrer votre adresse email";
+                errorMessage = "⚠️ Veuillez entrer votre adresse email";
                 EmailTextBox.Focus();
                 return false;
             }
 
             if (!IsValidEmail(email))
             {
-                errorMessage = "Adresse email invalide";
+                errorMessage = "⚠️ Adresse email invalide";
                 EmailTextBox.Focus();
                 return false;
             }
@@ -219,7 +235,7 @@ namespace MonBureau.UI.Views
             // Validate license key
             if (string.IsNullOrWhiteSpace(licenseKey))
             {
-                errorMessage = "Veuillez entrer votre clé de licence";
+                errorMessage = "⚠️ Veuillez entrer votre clé de licence";
                 LicenseKeyTextBox.Focus();
                 return false;
             }
@@ -227,7 +243,7 @@ namespace MonBureau.UI.Views
             // Validate license key format (MB-2025-XXXXX)
             if (!Regex.IsMatch(licenseKey, @"^MB-\d{4}-[A-Z0-9]{5,}$", RegexOptions.IgnoreCase))
             {
-                errorMessage = "Format de clé invalide. Format attendu: MB-2025-XXXXX";
+                errorMessage = "⚠️ Format de clé invalide. Format attendu: MB-2025-XXXXX";
                 LicenseKeyTextBox.Focus();
                 return false;
             }
@@ -255,51 +271,6 @@ namespace MonBureau.UI.Views
                 ? (System.Windows.Media.Brush)FindResource("ErrorBrush")
                 : (System.Windows.Media.Brush)FindResource("SuccessBrush");
             StatusMessage.Visibility = Visibility.Visible;
-        }
-
-        /// <summary>
-        /// Auto-format license key as user types
-        /// </summary>
-        private void LicenseKeyTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
-        {
-            var textBox = sender as System.Windows.Controls.TextBox;
-            if (textBox == null) return;
-
-            var text = textBox.Text.ToUpperInvariant().Replace("-", "");
-
-            // Format as MB-YYYY-XXXXX
-            if (text.Length >= 2 && !text.StartsWith("MB"))
-            {
-                if (text.StartsWith("M") && text.Length > 1 && text[1] != 'B')
-                {
-                    text = "MB" + text.Substring(1);
-                }
-            }
-
-            // Add dashes
-            var formatted = text;
-            if (text.Length > 2)
-            {
-                formatted = text.Substring(0, 2);
-                if (text.Length > 6)
-                {
-                    formatted += "-" + text.Substring(2, 4) + "-" + text.Substring(6);
-                }
-                else if (text.Length > 2)
-                {
-                    formatted += "-" + text.Substring(2);
-                }
-            }
-
-            // Update without triggering event again
-            if (formatted != textBox.Text)
-            {
-                var cursorPos = textBox.SelectionStart;
-                textBox.TextChanged -= LicenseKeyTextBox_TextChanged;
-                textBox.Text = formatted;
-                textBox.SelectionStart = Math.Min(cursorPos + 1, formatted.Length);
-                textBox.TextChanged += LicenseKeyTextBox_TextChanged;
-            }
         }
     }
 }

@@ -5,18 +5,20 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<!-- Firebase & Cloud -->
-		<PackageReference Include="FirebaseAdmin" Version="3.4.0" />
-		<PackageReference Include="FirebaseDatabase.net" Version="5.0.0" />
-		<PackageReference Include="Google.Cloud.Firestore" Version="4.1.0" />
+		<!-- Firebase Web SDK via REST API - No longer need Admin SDK -->
+		<!-- Removed: FirebaseAdmin, FirebaseDatabase.net, Google.Cloud.Firestore -->
+
+		<!-- HTTP Client for Firebase REST API -->
+		<PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
 
 		<!-- Database -->
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.0" />
 		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlcipher" Version="2.1.11" />
 
-		<!-- JSON Serialization - ADDED -->
+		<!-- JSON Serialization -->
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+		<PackageReference Include="System.Text.Json" Version="8.0.0" />
 
 		<!-- Security & System -->
 		<PackageReference Include="System.Management" Version="10.0.1" />

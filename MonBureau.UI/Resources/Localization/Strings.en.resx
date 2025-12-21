@@ -1,0 +1,295 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+	<xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+		<xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+		<xsd:element name="root" msdata:IsDataSet="true">
+			<xsd:complexType>
+				<xsd:choice maxOccurs="unbounded">
+					<xsd:element name="metadata">
+						<xsd:complexType>
+							<xsd:sequence>
+								<xsd:element name="value" type="xsd:string" minOccurs="0" />
+							</xsd:sequence>
+							<xsd:attribute name="name" use="required" type="xsd:string" />
+							<xsd:attribute name="type" type="xsd:string" />
+							<xsd:attribute name="mimetype" type="xsd:string" />
+							<xsd:attribute ref="xml:space" />
+						</xsd:complexType>
+					</xsd:element>
+					<xsd:element name="assembly">
+						<xsd:complexType>
+							<xsd:attribute name="alias" type="xsd:string" />
+							<xsd:attribute name="name" type="xsd:string" />
+						</xsd:complexType>
+					</xsd:element>
+					<xsd:element name="data">
+						<xsd:complexType>
+							<xsd:sequence>
+								<xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+								<xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+							</xsd:sequence>
+							<xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+							<xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+							<xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+							<xsd:attribute ref="xml:space" msdata:Ordinal="5" />
+						</xsd:complexType>
+					</xsd:element>
+					<xsd:element name="resheader">
+						<xsd:complexType>
+							<xsd:sequence>
+								<xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+							</xsd:sequence>
+							<xsd:attribute name="name" type="xsd:string" use="required" />
+						</xsd:complexType>
+					</xsd:element>
+				</xsd:choice>
+			</xsd:complexType>
+		</xsd:element>
+	</xsd:schema>
+	<resheader name="resmimetype">
+		<value>text/microsoft-resx</value>
+	</resheader>
+	<resheader name="version">
+		<value>2.0</value>
+	</resheader>
+	<resheader name="reader">
+		<value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+	</resheader>
+	<resheader name="writer">
+		<value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+	</resheader>
+
+	<!-- Common -->
+	<data name="AppName" xml:space="preserve">
+    <value>MonBureau</value>
+  </data>
+	<data name="AppSubtitle" xml:space="preserve">
+    <value>Professional Office Management</value>
+  </data>
+
+	<!-- Navigation -->
+	<data name="Nav_Dashboard" xml:space="preserve">
+    <value>Dashboard</value>
+  </data>
+	<data name="Nav_Clients" xml:space="preserve">
+    <value>Clients</value>
+  </data>
+	<data name="Nav_Cases" xml:space="preserve">
+    <value>Cases</value>
+  </data>
+	<data name="Nav_Documents" xml:space="preserve">
+    <value>Documents</value>
+  </data>
+	<data name="Nav_Backup" xml:space="preserve">
+    <value>Backup</value>
+  </data>
+	<data name="Nav_Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+
+	<!-- Dashboard -->
+	<data name="Dashboard_Title" xml:space="preserve">
+    <value>Dashboard</value>
+  </data>
+	<data name="Dashboard_Subtitle" xml:space="preserve">
+    <value>Overview of your office</value>
+  </data>
+	<data name="Dashboard_TotalClients" xml:space="preserve">
+    <value>Total Clients</value>
+  </data>
+	<data name="Dashboard_TotalCases" xml:space="preserve">
+    <value>Total Cases</value>
+  </data>
+	<data name="Dashboard_OpenCases" xml:space="preserve">
+    <value>Open Cases</value>
+  </data>
+	<data name="Dashboard_QuickActions" xml:space="preserve">
+    <value>Quick Actions</value>
+  </data>
+	<data name="Dashboard_RecentClients" xml:space="preserve">
+    <value>Recent Clients</value>
+  </data>
+	<data name="Dashboard_RecentCases" xml:space="preserve">
+    <value>Recent Cases</value>
+  </data>
+	<data name="Dashboard_NoRecentClients" xml:space="preserve">
+    <value>No recent clients</value>
+  </data>
+	<data name="Dashboard_NoRecentCases" xml:space="preserve">
+    <value>No recent cases</value>
+  </data>
+
+	<!-- Clients -->
+	<data name="Clients_Title" xml:space="preserve">
+    <value>Clients</value>
+  </data>
+	<data name="Clients_Subtitle" xml:space="preserve">
+    <value>Manage office clients</value>
+  </data>
+	<data name="Clients_NewClient" xml:space="preserve">
+    <value>New Client</value>
+  </data>
+	<data name="Clients_FullName" xml:space="preserve">
+    <value>Full Name</value>
+  </data>
+	<data name="Clients_Email" xml:space="preserve">
+    <value>Email</value>
+  </data>
+	<data name="Clients_Phone" xml:space="preserve">
+    <value>Phone</value>
+  </data>
+	<data name="Clients_Actions" xml:space="preserve">
+    <value>Actions</value>
+  </data>
+	<data name="Clients_NoClients" xml:space="preserve">
+    <value>No clients found</value>
+  </data>
+
+	<!-- Cases -->
+	<data name="Cases_Title" xml:space="preserve">
+    <value>Cases</value>
+  </data>
+	<data name="Cases_Subtitle" xml:space="preserve">
+    <value>Manage legal cases</value>
+  </data>
+	<data name="Cases_NewCase" xml:space="preserve">
+    <value>New Case</value>
+  </data>
+	<data name="Cases_Client" xml:space="preserve">
+    <value>Client</value>
+  </data>
+	<data name="Cases_OpenedOn" xml:space="preserve">
+    <value>Opened on</value>
+  </data>
+	<data name="Cases_NoCases" xml:space="preserve">
+    <value>No cases found</value>
+  </data>
+
+	<!-- Documents -->
+	<data name="Documents_Title" xml:space="preserve">
+    <value>Documents</value>
+  </data>
+	<data name="Documents_Subtitle" xml:space="preserve">
+    <value>All case documents</value>
+  </data>
+	<data name="Documents_NoDocuments" xml:space="preserve">
+    <value>No documents found</value>
+  </data>
+
+	<!-- Backup -->
+	<data name="Backup_Title" xml:space="preserve">
+    <value>Backup &amp; Restore</value>
+  </data>
+	<data name="Backup_Subtitle" xml:space="preserve">
+    <value>Manage your data backups</value>
+  </data>
+	<data name="Backup_QuickActions" xml:space="preserve">
+    <value>Quick Actions</value>
+  </data>
+	<data name="Backup_Create" xml:space="preserve">
+    <value>Create Backup</value>
+  </data>
+	<data name="Backup_Restore" xml:space="preserve">
+    <value>Restore</value>
+  </data>
+	<data name="Backup_AutoBackup" xml:space="preserve">
+    <value>Automatic Backup</value>
+  </data>
+	<data name="Backup_History" xml:space="preserve">
+    <value>Backup History</value>
+  </data>
+
+	<!-- Settings -->
+	<data name="Settings_Title" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+	<data name="Settings_Subtitle" xml:space="preserve">
+    <value>Application configuration</value>
+  </data>
+	<data name="Settings_OfficeInfo" xml:space="preserve">
+    <value>Office Information</value>
+  </data>
+	<data name="Settings_DefaultCourt" xml:space="preserve">
+    <value>Default Court</value>
+  </data>
+	<data name="Settings_DisplayPreferences" xml:space="preserve">
+    <value>Display Preferences</value>
+  </data>
+
+	<!-- Buttons -->
+	<data name="Button_Add" xml:space="preserve">
+    <value>Add</value>
+  </data>
+	<data name="Button_Edit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+	<data name="Button_Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+	<data name="Button_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+	<data name="Button_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+	<data name="Button_Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+	<data name="Button_Search" xml:space="preserve">
+    <value>Search</value>
+  </data>
+	<data name="Button_Export" xml:space="preserve">
+    <value>Export</value>
+  </data>
+	<data name="Button_Import" xml:space="preserve">
+    <value>Import</value>
+  </data>
+
+	<!-- Messages -->
+	<data name="Message_Loading" xml:space="preserve">
+    <value>Loading...</value>
+  </data>
+	<data name="Message_Success" xml:space="preserve">
+    <value>Success</value>
+  </data>
+	<data name="Message_Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+	<data name="Message_Confirm" xml:space="preserve">
+    <value>Confirm</value>
+  </data>
+	<data name="Message_DeleteConfirm" xml:space="preserve">
+    <value>Are you sure you want to delete this item?</value>
+  </data>
+
+	<!-- Status -->
+	<data name="Status_Active" xml:space="preserve">
+    <value>Active</value>
+  </data>
+	<data name="Status_Open" xml:space="preserve">
+    <value>Open</value>
+  </data>
+	<data name="Status_InProgress" xml:space="preserve">
+    <value>In Progress</value>
+  </data>
+	<data name="Status_Closed" xml:space="preserve">
+    <value>Closed</value>
+  </data>
+	<data name="Status_Archived" xml:space="preserve">
+    <value>Archived</value>
+  </data>
+
+	<!-- Language -->
+	<data name="Language_French" xml:space="preserve">
+    <value>Français</value>
+  </data>
+	<data name="Language_English" xml:space="preserve">
+    <value>English</value>
+  </data>
+	<data name="Language_Arabic" xml:space="preserve">
+    <value>العربية</value>
+  </data>
+	<data name="Language_Select" xml:space="preserve">
+    <value>Language</value>
+  </data>
+</root>

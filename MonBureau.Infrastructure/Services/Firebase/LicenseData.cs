@@ -1,56 +1,56 @@
 ﻿using System;
-using Google.Cloud.Firestore;
+using System.Text.Json.Serialization;
 
 namespace MonBureau.Infrastructure.Services.Firebase
 {
     /// <summary>
-    /// License data model for Firestore storage
-    /// FIXED: Proper camelCase to PascalCase mapping
+    /// License data model for Firestore REST API
+    /// Uses System.Text.Json instead of Firestore attributes
     /// </summary>
-    [FirestoreData]
     public class LicenseData
     {
-        [FirestoreProperty("licenseKey")]
+        [JsonPropertyName("licenseKey")]
         public string LicenseKey { get; set; } = string.Empty;
 
-        [FirestoreProperty("email")]
+        [JsonPropertyName("email")]
         public string Email { get; set; } = string.Empty;
 
-        [FirestoreProperty("deviceId")]
+        [JsonPropertyName("deviceId")]
         public string? DeviceId { get; set; }
 
-        [FirestoreProperty("activationDate")]
+        [JsonPropertyName("activationDate")]
         public DateTime? ActivationDate { get; set; }
 
-        [FirestoreProperty("expirationDate")]
+        [JsonPropertyName("expirationDate")]
         public DateTime? ExpirationDate { get; set; }
 
-        [FirestoreProperty("isActive")]
+        [JsonPropertyName("isActive")]
         public bool IsActive { get; set; }
 
-        [FirestoreProperty("type")]
+        [JsonPropertyName("type")]
         public LicenseType Type { get; set; } = LicenseType.Full;
 
-        [FirestoreProperty("trialStartDate")]
+        [JsonPropertyName("trialStartDate")]
         public DateTime? TrialStartDate { get; set; }
 
-        [FirestoreProperty("trialEndDate")]
+        [JsonPropertyName("trialEndDate")]
         public DateTime? TrialEndDate { get; set; }
 
-        [FirestoreProperty("createdAt")]
+        [JsonPropertyName("createdAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        [FirestoreProperty("lastValidation")]
+        [JsonPropertyName("lastValidation")]
         public DateTime? LastValidation { get; set; }
 
-        [FirestoreProperty("isLifetime")]
+        [JsonPropertyName("isLifetime")]
         public bool IsLifetime { get; set; }
 
         // Computed properties (not stored in Firestore)
 
         /// <summary>
-        /// FIXED: Lifetime licenses never expire
+        /// Lifetime licenses never expire
         /// </summary>
+        [JsonIgnore]
         public bool IsExpired
         {
             get
@@ -87,26 +87,29 @@ namespace MonBureau.Infrastructure.Services.Firebase
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine($"[LicenseData] ⚠️ Error checking expiration: {ex.Message}");
-                    return false; // Don't block on errors
+                    return false;
                 }
             }
         }
 
+        [JsonIgnore]
         public bool IsTrialExpired => Type == LicenseType.Trial &&
                                       TrialEndDate.HasValue &&
                                       DateTime.UtcNow > TrialEndDate.Value;
 
+        [JsonIgnore]
         public bool CanActivate => string.IsNullOrEmpty(DeviceId);
 
         /// <summary>
-        /// FIXED: Lifetime licenses show "∞" for days remaining
+        /// Lifetime licenses show infinite days remaining
         /// </summary>
+        [JsonIgnore]
         public int DaysRemaining
         {
             get
             {
                 if (IsLifetime || !ExpirationDate.HasValue)
-                    return int.MaxValue; // Infinite
+                    return int.MaxValue;
 
                 var remaining = (ExpirationDate.Value - DateTime.UtcNow).Days;
                 return remaining > 0 ? remaining : 0;
@@ -116,6 +119,7 @@ namespace MonBureau.Infrastructure.Services.Firebase
         /// <summary>
         /// User-friendly expiration message
         /// </summary>
+        [JsonIgnore]
         public string ExpirationMessage
         {
             get

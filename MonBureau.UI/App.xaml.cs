@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Markup;
 using System.Windows.Threading;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,7 +22,7 @@ using MonBureau.UI.ViewModels;
 namespace MonBureau.UI
 {
     /// <summary>
-    /// RELEASE VERSION - Production-ready with Firebase Web SDK
+    /// FIXED: Localization initialized before any windows
     /// </summary>
     public partial class App : Application
     {
@@ -34,11 +36,59 @@ namespace MonBureau.UI
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "MonBureau", "Logs");
             Directory.CreateDirectory(_logPath);
+
+            // ✅ CRITICAL FIX: Initialize localization BEFORE any UI elements
+            InitializeLocalization();
+        }
+
+        /// <summary>
+        /// Initializes localization and applies saved language
+        /// </summary>
+        private void InitializeLocalization()
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("[App] Initializing localization...");
+
+                // Initialize the localization service
+                var localizationService = LocalizationService.Instance;
+
+                // Get current language
+                var currentLanguage = localizationService.CurrentLanguage;
+                System.Diagnostics.Debug.WriteLine($"[App] Current language: {currentLanguage}");
+
+                // Apply culture
+                var culture = new CultureInfo(currentLanguage);
+                CultureInfo.CurrentCulture = culture;
+                CultureInfo.CurrentUICulture = culture;
+                CultureInfo.DefaultThreadCurrentCulture = culture;
+                CultureInfo.DefaultThreadCurrentUICulture = culture;
+
+                // Set thread culture
+                System.Threading.Thread.CurrentThread.CurrentCulture = culture;
+                System.Threading.Thread.CurrentThread.CurrentUICulture = culture;
+
+                // Set language for XAML
+                FrameworkElement.LanguageProperty.OverrideMetadata(
+                    typeof(FrameworkElement),
+                    new FrameworkPropertyMetadata(
+                        XmlLanguage.GetLanguage(CultureInfo.CurrentCulture.Name)));
+
+                System.Diagnostics.Debug.WriteLine($"[App] ✅ Localization initialized: {culture.Name}");
+                System.Diagnostics.Debug.WriteLine($"[App] CurrentUICulture: {CultureInfo.CurrentUICulture.Name}");
+                System.Diagnostics.Debug.WriteLine($"[App] RTL: {localizationService.IsRightToLeft}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[App] ❌ Localization initialization error: {ex.Message}");
+            }
         }
 
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+
+            System.Diagnostics.Debug.WriteLine("[App] OnStartup called");
 
             // Setup global exception handlers
             SetupExceptionHandlers();
@@ -63,17 +113,17 @@ namespace MonBureau.UI
 
             // Initialize auto-backup
             InitializeAutoBackup();
+
+            System.Diagnostics.Debug.WriteLine("[App] ✅ Startup complete");
         }
 
-        // ============================================
-        // Security Initialization
-        // ============================================
+        // [Rest of the App.xaml.cs code remains the same...]
+        // [Include all other methods: InitializeSecurity, InitializeFirebase, ConfigureServices, etc.]
 
         private bool InitializeSecurity()
         {
             try
             {
-                // Check for debugger (warning only)
                 if (System.Diagnostics.Debugger.IsAttached)
                 {
                     var result = MessageBox.Show(
@@ -89,10 +139,8 @@ namespace MonBureau.UI
                     }
                 }
 
-                // Ensure database encryption key exists
                 if (!SecureCredentialManager.CredentialExists("Database_EncryptionKey"))
                 {
-                    // Generate encryption key automatically
                     var newKey = GenerateEncryptionKey();
 
                     bool stored = SecureCredentialManager.StoreCredential(
@@ -140,10 +188,6 @@ namespace MonBureau.UI
             }
         }
 
-        // ============================================
-        // Firebase Web SDK Initialization
-        // ============================================
-
         private void InitializeFirebase()
         {
             try
@@ -171,7 +215,6 @@ namespace MonBureau.UI
                     return;
                 }
 
-                // Initialize Firebase Web SDK
                 bool initialized = FirebaseConfig.Initialize();
 
                 if (!initialized)
@@ -219,10 +262,6 @@ namespace MonBureau.UI
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
         }
-
-        // ============================================
-        // Exception Handlers
-        // ============================================
 
         private void SetupExceptionHandlers()
         {
@@ -291,10 +330,6 @@ namespace MonBureau.UI
                 MessageBoxImage.Error);
         }
 
-        // ============================================
-        // Service Configuration
-        // ============================================
-
         private void ConfigureServices(ServiceCollection services)
         {
             var dbPath = Path.Combine(
@@ -309,7 +344,6 @@ namespace MonBureau.UI
                 Directory.CreateDirectory(directory);
             }
 
-            // Database
             services.AddDbContextFactory<AppDbContext>(options =>
             {
                 options.UseSqlite($"Data Source={dbPath}");
@@ -324,10 +358,8 @@ namespace MonBureau.UI
                 options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
             }, ServiceLifetime.Scoped);
 
-            // Repositories
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-            // Infrastructure Services - Singleton
             services.AddSingleton(sp =>
             {
                 var factory = sp.GetRequiredService<IDbContextFactory<AppDbContext>>();
@@ -342,10 +374,8 @@ namespace MonBureau.UI
             services.AddSingleton<CacheService>();
             services.AddSingleton<AutoBackupService>();
 
-            // Business Services - Scoped
             services.AddScoped<ICaseService, CaseService>();
 
-            // ViewModels - Transient
             services.AddTransient<MainViewModel>();
             services.AddTransient<DashboardViewModel>();
             services.AddTransient<ClientsViewModel>();
@@ -354,10 +384,6 @@ namespace MonBureau.UI
             services.AddTransient<SettingsViewModel>();
             services.AddTransient<DocumentsViewModel>();
         }
-
-        // ============================================
-        // Database Initialization
-        // ============================================
 
         private void InitializeDatabase()
         {
@@ -368,10 +394,8 @@ namespace MonBureau.UI
                 {
                     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-                    // Ensure database is created
                     context.Database.EnsureCreated();
 
-                    // Verify encryption
                     bool encryptionVerified = AppDbContext.VerifyEncryption();
                     if (!encryptionVerified)
                     {
@@ -380,7 +404,6 @@ namespace MonBureau.UI
                         );
                     }
 
-                    // Seed database if empty
                     SeedDatabaseIfEmpty(context);
                 }
             }
@@ -402,10 +425,6 @@ namespace MonBureau.UI
             }
         }
 
-        // ============================================
-        // Auto-backup Initialization
-        // ============================================
-
         private void InitializeAutoBackup()
         {
             try
@@ -417,10 +436,6 @@ namespace MonBureau.UI
                 LogError(ex);
             }
         }
-
-        // ============================================
-        // Database Seeding
-        // ============================================
 
         private void SeedDatabaseIfEmpty(AppDbContext context)
         {
@@ -509,10 +524,6 @@ namespace MonBureau.UI
             }
         }
 
-        // ============================================
-        // Cleanup on Exit
-        // ============================================
-
         protected override void OnExit(ExitEventArgs e)
         {
             _autoBackupService?.Dispose();
@@ -526,10 +537,6 @@ namespace MonBureau.UI
 
             base.OnExit(e);
         }
-
-        // ============================================
-        // Service Locator
-        // ============================================
 
         public static T GetService<T>() where T : class
         {

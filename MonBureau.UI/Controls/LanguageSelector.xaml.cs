@@ -4,6 +4,9 @@ using MonBureau.UI.Services;
 
 namespace MonBureau.UI.Controls
 {
+    /// <summary>
+    /// FIXED: Language selector with proper restart handling
+    /// </summary>
     public partial class LanguageSelector : UserControl
     {
         private readonly LocalizationService _localizationService;
@@ -33,23 +36,57 @@ namespace MonBureau.UI.Controls
 
         private void SelectFrench_Click(object sender, RoutedEventArgs e)
         {
-            _localizationService.ChangeLanguage("fr");
-            LanguagePopup.IsOpen = false;
-            RequestRestartIfNeeded();
+            ChangeLanguage("fr");
         }
 
         private void SelectEnglish_Click(object sender, RoutedEventArgs e)
         {
-            _localizationService.ChangeLanguage("en");
-            LanguagePopup.IsOpen = false;
-            RequestRestartIfNeeded();
+            ChangeLanguage("en");
         }
 
         private void SelectArabic_Click(object sender, RoutedEventArgs e)
         {
-            _localizationService.ChangeLanguage("ar");
+            ChangeLanguage("ar");
+        }
+
+        private void ChangeLanguage(string languageCode)
+        {
+            if (_localizationService.CurrentLanguage == languageCode)
+            {
+                LanguagePopup.IsOpen = false;
+                return; // Already using this language
+            }
+
+            _localizationService.ChangeLanguage(languageCode);
             LanguagePopup.IsOpen = false;
-            RequestRestartIfNeeded();
+
+            // Show restart prompt
+            var currentLang = _localizationService.CurrentLanguage;
+            var message = currentLang switch
+            {
+                "ar" => "تم تغيير اللغة. يرجى إعادة تشغيل التطبيق لتطبيق جميع التغييرات.\n\nإعادة التشغيل الآن؟",
+                "en" => "Language changed. Please restart the application for all changes to take effect.\n\nRestart now?",
+                _ => "Langue modifiée. Veuillez redémarrer l'application pour appliquer tous les changements.\n\nRedémarrer maintenant?"
+            };
+
+            var title = currentLang switch
+            {
+                "ar" => "تم تغيير اللغة",
+                "en" => "Language Changed",
+                _ => "Langue Modifiée"
+            };
+
+            var result = MessageBox.Show(
+                message,
+                title,
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Information
+            );
+
+            if (result == MessageBoxResult.Yes)
+            {
+                RestartApplication();
+            }
         }
 
         private void UpdateCurrentLanguageDisplay()
@@ -63,22 +100,22 @@ namespace MonBureau.UI.Controls
             };
         }
 
-        private void RequestRestartIfNeeded()
+        private void RestartApplication()
         {
-            var result = MessageBox.Show(
-                _localizationService.GetString("Message_RestartRequired") ??
-                "Language changed. Please restart the application for all changes to take effect.\n\nRestart now?",
-                _localizationService.GetString("Message_LanguageChanged") ?? "Language Changed",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Information
-            );
-
-            if (result == MessageBoxResult.Yes)
+            try
             {
-                System.Diagnostics.Process.Start(
-                    Environment.ProcessPath ?? Application.ResourceAssembly.Location
-                );
+                var exePath = Environment.ProcessPath ?? Application.ResourceAssembly.Location;
+                System.Diagnostics.Process.Start(exePath);
                 Application.Current.Shutdown();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[LanguageSelector] Error restarting: {ex.Message}");
+                MessageBox.Show(
+                    "Impossible de redémarrer automatiquement. Veuillez redémarrer manuellement.",
+                    "Erreur",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
             }
         }
     }

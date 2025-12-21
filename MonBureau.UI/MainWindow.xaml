@@ -1,9 +1,10 @@
-﻿<!--  MainWindow.xaml - Updated with Language Selector  -->
+﻿<!--  MainWindow.xaml - LOCALIZED with loc: extension  -->
 <Window
     x:Class="MonBureau.UI.Views.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="clr-namespace:MonBureau.UI.Controls"
+    xmlns:loc="clr-namespace:MonBureau.UI.Markup"
     Title="MonBureau - Gestion de Cabinet"
     Width="1400"
     Height="800"
@@ -17,7 +18,6 @@
     <Window.Resources>
         <FontFamily x:Key="IconFont">Segoe MDL2 Assets</FontFamily>
 
-        <!--  Navigation Button Styles  -->
         <Style x:Key="NavButton" TargetType="Button">
             <Setter Property="Height" Value="50" />
             <Setter Property="Padding" Value="20,0" />
@@ -115,7 +115,7 @@
                                 FontSize="18"
                                 FontWeight="Bold"
                                 Foreground="White"
-                                Text="MonBureau" />
+                                Text="{loc:Localize AppName}" />
                             <TextBlock
                                 FontSize="11"
                                 Foreground="White"
@@ -124,7 +124,7 @@
                         </StackPanel>
                     </StackPanel>
 
-                    <!--  ✅ NEW: Language Selector  -->
+                    <!--  Language Selector  -->
                     <controls:LanguageSelector
                         Grid.Column="2"
                         Margin="0,0,16,0"
@@ -209,7 +209,7 @@
                                     FontSize="14"
                                     FontWeight="Medium"
                                     Foreground="White"
-                                    Text="Tableau de Bord" />
+                                    Text="{loc:Localize Nav_Dashboard}" />
                             </StackPanel>
                         </Button>
 
@@ -231,7 +231,7 @@
                                     VerticalAlignment="Center"
                                     FontSize="14"
                                     Foreground="{StaticResource TextPrimaryBrush}"
-                                    Text="Clients" />
+                                    Text="{loc:Localize Nav_Clients}" />
                             </StackPanel>
                         </Button>
 
@@ -253,7 +253,7 @@
                                     VerticalAlignment="Center"
                                     FontSize="14"
                                     Foreground="{StaticResource TextPrimaryBrush}"
-                                    Text="Dossiers" />
+                                    Text="{loc:Localize Nav_Cases}" />
                             </StackPanel>
                         </Button>
 
@@ -275,7 +275,7 @@
                                     VerticalAlignment="Center"
                                     FontSize="14"
                                     Foreground="{StaticResource TextPrimaryBrush}"
-                                    Text="Documents" />
+                                    Text="{loc:Localize Nav_Documents}" />
                             </StackPanel>
                         </Button>
 
@@ -299,7 +299,7 @@
                                     VerticalAlignment="Center"
                                     FontSize="14"
                                     Foreground="{StaticResource TextPrimaryBrush}"
-                                    Text="Sauvegarde" />
+                                    Text="{loc:Localize Nav_Backup}" />
                             </StackPanel>
                         </Button>
 
@@ -321,7 +321,7 @@
                                     VerticalAlignment="Center"
                                     FontSize="14"
                                     Foreground="{StaticResource TextPrimaryBrush}"
-                                    Text="Paramètres" />
+                                    Text="{loc:Localize Nav_Settings}" />
                             </StackPanel>
                         </Button>
 
@@ -358,7 +358,7 @@
                                         <TextBlock
                                             FontSize="11"
                                             Foreground="{StaticResource SuccessBrush}"
-                                            Text="Licence Active" />
+                                            Text="{loc:Localize Status_Active}" />
                                     </StackPanel>
                                 </StackPanel>
                             </StackPanel>

@@ -1,0 +1,295 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+	<xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+		<xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+		<xsd:element name="root" msdata:IsDataSet="true">
+			<xsd:complexType>
+				<xsd:choice maxOccurs="unbounded">
+					<xsd:element name="metadata">
+						<xsd:complexType>
+							<xsd:sequence>
+								<xsd:element name="value" type="xsd:string" minOccurs="0" />
+							</xsd:sequence>
+							<xsd:attribute name="name" use="required" type="xsd:string" />
+							<xsd:attribute name="type" type="xsd:string" />
+							<xsd:attribute name="mimetype" type="xsd:string" />
+							<xsd:attribute ref="xml:space" />
+						</xsd:complexType>
+					</xsd:element>
+					<xsd:element name="assembly">
+						<xsd:complexType>
+							<xsd:attribute name="alias" type="xsd:string" />
+							<xsd:attribute name="name" type="xsd:string" />
+						</xsd:complexType>
+					</xsd:element>
+					<xsd:element name="data">
+						<xsd:complexType>
+							<xsd:sequence>
+								<xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+								<xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+							</xsd:sequence>
+							<xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+							<xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+							<xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+							<xsd:attribute ref="xml:space" msdata:Ordinal="5" />
+						</xsd:complexType>
+					</xsd:element>
+					<xsd:element name="resheader">
+						<xsd:complexType>
+							<xsd:sequence>
+								<xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+							</xsd:sequence>
+							<xsd:attribute name="name" type="xsd:string" use="required" />
+						</xsd:complexType>
+					</xsd:element>
+				</xsd:choice>
+			</xsd:complexType>
+		</xsd:element>
+	</xsd:schema>
+	<resheader name="resmimetype">
+		<value>text/microsoft-resx</value>
+	</resheader>
+	<resheader name="version">
+		<value>2.0</value>
+	</resheader>
+	<resheader name="reader">
+		<value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+	</resheader>
+	<resheader name="writer">
+		<value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+	</resheader>
+
+	<!-- Common -->
+	<data name="AppName" xml:space="preserve">
+    <value>مكتبي</value>
+  </data>
+	<data name="AppSubtitle" xml:space="preserve">
+    <value>إدارة مهنية للمكتب</value>
+  </data>
+
+	<!-- Navigation -->
+	<data name="Nav_Dashboard" xml:space="preserve">
+    <value>لوحة المعلومات</value>
+  </data>
+	<data name="Nav_Clients" xml:space="preserve">
+    <value>العملاء</value>
+  </data>
+	<data name="Nav_Cases" xml:space="preserve">
+    <value>القضايا</value>
+  </data>
+	<data name="Nav_Documents" xml:space="preserve">
+    <value>المستندات</value>
+  </data>
+	<data name="Nav_Backup" xml:space="preserve">
+    <value>النسخ الاحتياطي</value>
+  </data>
+	<data name="Nav_Settings" xml:space="preserve">
+    <value>الإعدادات</value>
+  </data>
+
+	<!-- Dashboard -->
+	<data name="Dashboard_Title" xml:space="preserve">
+    <value>لوحة المعلومات</value>
+  </data>
+	<data name="Dashboard_Subtitle" xml:space="preserve">
+    <value>نظرة عامة على مكتبك</value>
+  </data>
+	<data name="Dashboard_TotalClients" xml:space="preserve">
+    <value>إجمالي العملاء</value>
+  </data>
+	<data name="Dashboard_TotalCases" xml:space="preserve">
+    <value>إجمالي القضايا</value>
+  </data>
+	<data name="Dashboard_OpenCases" xml:space="preserve">
+    <value>القضايا المفتوحة</value>
+  </data>
+	<data name="Dashboard_QuickActions" xml:space="preserve">
+    <value>إجراءات سريعة</value>
+  </data>
+	<data name="Dashboard_RecentClients" xml:space="preserve">
+    <value>العملاء الأخيرون</value>
+  </data>
+	<data name="Dashboard_RecentCases" xml:space="preserve">
+    <value>القضايا الأخيرة</value>
+  </data>
+	<data name="Dashboard_NoRecentClients" xml:space="preserve">
+    <value>لا يوجد عملاء حديثون</value>
+  </data>
+	<data name="Dashboard_NoRecentCases" xml:space="preserve">
+    <value>لا توجد قضايا حديثة</value>
+  </data>
+
+	<!-- Clients -->
+	<data name="Clients_Title" xml:space="preserve">
+    <value>العملاء</value>
+  </data>
+	<data name="Clients_Subtitle" xml:space="preserve">
+    <value>إدارة عملاء المكتب</value>
+  </data>
+	<data name="Clients_NewClient" xml:space="preserve">
+    <value>عميل جديد</value>
+  </data>
+	<data name="Clients_FullName" xml:space="preserve">
+    <value>الاسم الكامل</value>
+  </data>
+	<data name="Clients_Email" xml:space="preserve">
+    <value>البريد الإلكتروني</value>
+  </data>
+	<data name="Clients_Phone" xml:space="preserve">
+    <value>الهاتف</value>
+  </data>
+	<data name="Clients_Actions" xml:space="preserve">
+    <value>الإجراءات</value>
+  </data>
+	<data name="Clients_NoClients" xml:space="preserve">
+    <value>لم يتم العثور على عملاء</value>
+  </data>
+
+	<!-- Cases -->
+	<data name="Cases_Title" xml:space="preserve">
+    <value>القضايا</value>
+  </data>
+	<data name="Cases_Subtitle" xml:space="preserve">
+    <value>إدارة القضايا القانونية</value>
+  </data>
+	<data name="Cases_NewCase" xml:space="preserve">
+    <value>قضية جديدة</value>
+  </data>
+	<data name="Cases_Client" xml:space="preserve">
+    <value>العميل</value>
+  </data>
+	<data name="Cases_OpenedOn" xml:space="preserve">
+    <value>فتحت في</value>
+  </data>
+	<data name="Cases_NoCases" xml:space="preserve">
+    <value>لم يتم العثور على قضايا</value>
+  </data>
+
+	<!-- Documents -->
+	<data name="Documents_Title" xml:space="preserve">
+    <value>المستندات</value>
+  </data>
+	<data name="Documents_Subtitle" xml:space="preserve">
+    <value>جميع مستندات القضايا</value>
+  </data>
+	<data name="Documents_NoDocuments" xml:space="preserve">
+    <value>لم يتم العثور على مستندات</value>
+  </data>
+
+	<!-- Backup -->
+	<data name="Backup_Title" xml:space="preserve">
+    <value>النسخ الاحتياطي والاستعادة</value>
+  </data>
+	<data name="Backup_Subtitle" xml:space="preserve">
+    <value>إدارة النسخ الاحتياطية للبيانات</value>
+  </data>
+	<data name="Backup_QuickActions" xml:space="preserve">
+    <value>إجراءات سريعة</value>
+  </data>
+	<data name="Backup_Create" xml:space="preserve">
+    <value>إنشاء نسخة احتياطية</value>
+  </data>
+	<data name="Backup_Restore" xml:space="preserve">
+    <value>استعادة</value>
+  </data>
+	<data name="Backup_AutoBackup" xml:space="preserve">
+    <value>النسخ الاحتياطي التلقائي</value>
+  </data>
+	<data name="Backup_History" xml:space="preserve">
+    <value>سجل النسخ الاحتياطية</value>
+  </data>
+
+	<!-- Settings -->
+	<data name="Settings_Title" xml:space="preserve">
+    <value>الإعدادات</value>
+  </data>
+	<data name="Settings_Subtitle" xml:space="preserve">
+    <value>تكوين التطبيق</value>
+  </data>
+	<data name="Settings_OfficeInfo" xml:space="preserve">
+    <value>معلومات المكتب</value>
+  </data>
+	<data name="Settings_DefaultCourt" xml:space="preserve">
+    <value>المحكمة الافتراضية</value>
+  </data>
+	<data name="Settings_DisplayPreferences" xml:space="preserve">
+    <value>تفضيلات العرض</value>
+  </data>
+
+	<!-- Buttons -->
+	<data name="Button_Add" xml:space="preserve">
+    <value>إضافة</value>
+  </data>
+	<data name="Button_Edit" xml:space="preserve">
+    <value>تعديل</value>
+  </data>
+	<data name="Button_Delete" xml:space="preserve">
+    <value>حذف</value>
+  </data>
+	<data name="Button_Save" xml:space="preserve">
+    <value>حفظ</value>
+  </data>
+	<data name="Button_Cancel" xml:space="preserve">
+    <value>إلغاء</value>
+  </data>
+	<data name="Button_Refresh" xml:space="preserve">
+    <value>تحديث</value>
+  </data>
+	<data name="Button_Search" xml:space="preserve">
+    <value>بحث</value>
+  </data>
+	<data name="Button_Export" xml:space="preserve">
+    <value>تصدير</value>
+  </data>
+	<data name="Button_Import" xml:space="preserve">
+    <value>استيراد</value>
+  </data>
+
+	<!-- Messages -->
+	<data name="Message_Loading" xml:space="preserve">
+    <value>جاري التحميل...</value>
+  </data>
+	<data name="Message_Success" xml:space="preserve">
+    <value>نجاح</value>
+  </data>
+	<data name="Message_Error" xml:space="preserve">
+    <value>خطأ</value>
+  </data>
+	<data name="Message_Confirm" xml:space="preserve">
+    <value>تأكيد</value>
+  </data>
+	<data name="Message_DeleteConfirm" xml:space="preserve">
+    <value>هل أنت متأكد من حذف هذا العنصر؟</value>
+  </data>
+
+	<!-- Status -->
+	<data name="Status_Active" xml:space="preserve">
+    <value>نشط</value>
+  </data>
+	<data name="Status_Open" xml:space="preserve">
+    <value>مفتوح</value>
+  </data>
+	<data name="Status_InProgress" xml:space="preserve">
+    <value>قيد التنفيذ</value>
+  </data>
+	<data name="Status_Closed" xml:space="preserve">
+    <value>مغلق</value>
+  </data>
+	<data name="Status_Archived" xml:space="preserve">
+    <value>مؤرشف</value>
+  </data>
+
+	<!-- Language -->
+	<data name="Language_French" xml:space="preserve">
+    <value>Français</value>
+  </data>
+	<data name="Language_English" xml:space="preserve">
+    <value>English</value>
+  </data>
+	<data name="Language_Arabic" xml:space="preserve">
+    <value>العربية</value>
+  </data>
+	<data name="Language_Select" xml:space="preserve">
+    <value>اللغة</value>
+  </data>
+</root>

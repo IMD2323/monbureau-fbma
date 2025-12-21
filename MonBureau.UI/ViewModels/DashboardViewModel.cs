@@ -16,17 +16,16 @@ using MonBureau.Infrastructure.Services;
 namespace MonBureau.UI.ViewModels
 {
     /// <summary>
-    /// FIXED: Never loads entire tables
-    /// Uses .Take() limits on all queries
-    /// Executes search in database, not in-memory
+    /// FIXED: Uses DbContextFactory to prevent concurrent access issues
+    /// Each operation gets its own DbContext instance
     /// </summary>
     public partial class DashboardViewModel : ObservableObject, IDisposable
     {
         private const string StatsCacheKey = "dashboard:stats";
-        private const int RECENT_ITEMS_LIMIT = 6; // FIXED: Hard limit
+        private const int RECENT_ITEMS_LIMIT = 6;
 
         private readonly IUnitOfWork _unitOfWork;
-        private readonly AppDbContext _context;
+        private readonly IDbContextFactory<AppDbContext> _contextFactory;
         private readonly CacheService _cache;
         private CancellationTokenSource? _loadCancellation;
         private bool _disposed;
@@ -55,10 +54,13 @@ namespace MonBureau.UI.ViewModels
         [ObservableProperty]
         private bool _isLoading;
 
-        public DashboardViewModel(IUnitOfWork unitOfWork, AppDbContext context, CacheService cache)
+        public DashboardViewModel(
+            IUnitOfWork unitOfWork,
+            IDbContextFactory<AppDbContext> contextFactory,
+            CacheService cache)
         {
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
-            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
 
             System.Diagnostics.Debug.WriteLine("[DashboardViewModel] Created");
@@ -68,7 +70,7 @@ namespace MonBureau.UI.ViewModels
         {
             if (_disposed)
             {
-                System.Diagnostics.Debug.WriteLine("[DashboardViewModel] Already disposed, skipping load");
+                System.Diagnostics.Debug.WriteLine("[DashboardViewModel] Already disposed");
                 return;
             }
 
@@ -85,24 +87,14 @@ namespace MonBureau.UI.ViewModels
                 // Load statistics (fast, cached)
                 await LoadStatisticsAsync(ct);
 
-                // Load panels lazily in background
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        await LoadPanelsAsync(ct);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        System.Diagnostics.Debug.WriteLine("[DashboardViewModel] Panel load cancelled");
-                    }
-                    catch (Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[DashboardViewModel] Panel load error: {ex.Message}");
-                    }
-                }, ct);
+                // Load panels in parallel with separate contexts
+                await Task.WhenAll(
+                    LoadRecentClientsAsync(ct),
+                    LoadRecentCasesAsync(ct),
+                    LoadRecentItemsAsync(ct)
+                );
 
-                System.Diagnostics.Debug.WriteLine("[DashboardViewModel] Statistics loaded");
+                System.Diagnostics.Debug.WriteLine("[DashboardViewModel] ✅ All data loaded");
             }
             catch (OperationCanceledException)
             {
@@ -110,9 +102,12 @@ namespace MonBureau.UI.ViewModels
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[DashboardViewModel] Error loading: {ex.Message}");
-                MessageBox.Show($"Erreur lors du chargement: {ex.Message}", "Erreur",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Diagnostics.Debug.WriteLine($"[DashboardViewModel] ❌ Error: {ex.Message}");
+                await Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    MessageBox.Show($"Erreur de chargement: {ex.Message}", "Erreur",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                });
             }
             finally
             {
@@ -121,7 +116,7 @@ namespace MonBureau.UI.ViewModels
         }
 
         /// <summary>
-        /// FIXED: Counts only, no data loading
+        /// FIXED: Uses separate DbContext for statistics
         /// </summary>
         private async Task LoadStatisticsAsync(CancellationToken ct)
         {
@@ -130,14 +125,15 @@ namespace MonBureau.UI.ViewModels
                 TotalClients = cached.TotalClients;
                 TotalCases = cached.TotalCases;
                 OpenCases = cached.OpenCases;
-                System.Diagnostics.Debug.WriteLine("[DashboardViewModel] Stats served from cache");
+                System.Diagnostics.Debug.WriteLine("[DashboardViewModel] Stats from cache");
                 return;
             }
 
-            // FIXED: Only count queries, no SELECT *
-            var totalClientsTask = _context.Clients.AsNoTracking().CountAsync(ct);
-            var totalCasesTask = _context.Cases.AsNoTracking().CountAsync(ct);
-            var openCasesTask = _context.Cases
+            await using var context = await _contextFactory.CreateDbContextAsync(ct);
+
+            var totalClientsTask = context.Clients.AsNoTracking().CountAsync(ct);
+            var totalCasesTask = context.Cases.AsNoTracking().CountAsync(ct);
+            var openCasesTask = context.Cases
                 .AsNoTracking()
                 .CountAsync(c => c.Status == CaseStatus.Open || c.Status == CaseStatus.InProgress, ct);
 
@@ -158,15 +154,16 @@ namespace MonBureau.UI.ViewModels
         }
 
         /// <summary>
-        /// FIXED: Loads only 6 most recent clients
+        /// FIXED: Uses separate DbContext
         /// </summary>
         private async Task LoadRecentClientsAsync(CancellationToken ct)
         {
-            // FIXED: .Take(6) executes in database
-            var clients = await _context.Clients
+            await using var context = await _contextFactory.CreateDbContextAsync(ct);
+
+            var clients = await context.Clients
                 .AsNoTracking()
                 .OrderByDescending(c => c.CreatedAt)
-                .Take(RECENT_ITEMS_LIMIT) // ← CRITICAL FIX
+                .Take(RECENT_ITEMS_LIMIT)
                 .ToListAsync(ct);
 
             if (ct.IsCancellationRequested) return;
@@ -178,15 +175,17 @@ namespace MonBureau.UI.ViewModels
         }
 
         /// <summary>
-        /// FIXED: Loads only 6 most recent cases
+        /// FIXED: Uses separate DbContext
         /// </summary>
         private async Task LoadRecentCasesAsync(CancellationToken ct)
         {
-            var cases = await _context.Cases
+            await using var context = await _contextFactory.CreateDbContextAsync(ct);
+
+            var cases = await context.Cases
                 .AsNoTracking()
                 .Include(c => c.Client)
                 .OrderByDescending(c => c.CreatedAt)
-                .Take(RECENT_ITEMS_LIMIT) // ← CRITICAL FIX
+                .Take(RECENT_ITEMS_LIMIT)
                 .ToListAsync(ct);
 
             if (ct.IsCancellationRequested) return;
@@ -198,16 +197,18 @@ namespace MonBureau.UI.ViewModels
         }
 
         /// <summary>
-        /// FIXED: Loads only 6 most recent items
+        /// FIXED: Uses separate DbContext
         /// </summary>
         private async Task LoadRecentItemsAsync(CancellationToken ct)
         {
-            var items = await _context.CaseItems
+            await using var context = await _contextFactory.CreateDbContextAsync(ct);
+
+            var items = await context.CaseItems
                 .AsNoTracking()
                 .Include(i => i.Case)
                     .ThenInclude(c => c.Client)
                 .OrderByDescending(i => i.CreatedAt)
-                .Take(RECENT_ITEMS_LIMIT) // ← CRITICAL FIX
+                .Take(RECENT_ITEMS_LIMIT)
                 .ToListAsync(ct);
 
             if (ct.IsCancellationRequested) return;
@@ -216,15 +217,6 @@ namespace MonBureau.UI.ViewModels
             {
                 RecentItems = new ObservableCollection<CaseItem>(items);
             }, System.Windows.Threading.DispatcherPriority.Background, ct);
-        }
-
-        private async Task LoadPanelsAsync(CancellationToken ct)
-        {
-            var clientsTask = LoadRecentClientsAsync(ct);
-            var casesTask = LoadRecentCasesAsync(ct);
-            var itemsTask = LoadRecentItemsAsync(ct);
-
-            await Task.WhenAll(clientsTask, casesTask, itemsTask);
         }
 
         #region Commands
@@ -239,7 +231,7 @@ namespace MonBureau.UI.ViewModels
                 var dialog = new Views.Dialogs.ClientDialog();
                 if (dialog.ShowDialog() == true)
                 {
-                    InvalidateStatsCache();
+                    _cache.Invalidate(StatsCacheKey);
                     await LoadDataAsync();
                 }
             }
@@ -260,7 +252,7 @@ namespace MonBureau.UI.ViewModels
                 var dialog = new Views.Dialogs.CaseDialog();
                 if (dialog.ShowDialog() == true)
                 {
-                    InvalidateStatsCache();
+                    _cache.Invalidate(StatsCacheKey);
                     await LoadDataAsync();
                 }
             }
@@ -281,7 +273,7 @@ namespace MonBureau.UI.ViewModels
                 var dialog = new Views.Dialogs.ItemDialog();
                 if (dialog.ShowDialog() == true)
                 {
-                    InvalidateStatsCache();
+                    _cache.Invalidate(StatsCacheKey);
                     await LoadDataAsync();
                 }
             }
@@ -302,7 +294,7 @@ namespace MonBureau.UI.ViewModels
                 var dialog = new Views.Dialogs.ClientDialog(client);
                 if (dialog.ShowDialog() == true)
                 {
-                    InvalidateStatsCache();
+                    _cache.Invalidate(StatsCacheKey);
                     _ = LoadDataAsync();
                 }
             }
@@ -323,7 +315,7 @@ namespace MonBureau.UI.ViewModels
                 var dialog = new Views.Dialogs.CaseDialog(caseEntity);
                 if (dialog.ShowDialog() == true)
                 {
-                    InvalidateStatsCache();
+                    _cache.Invalidate(StatsCacheKey);
                     _ = LoadDataAsync();
                 }
             }
@@ -344,7 +336,7 @@ namespace MonBureau.UI.ViewModels
                 var dialog = new Views.Dialogs.ItemDialog(item);
                 if (dialog.ShowDialog() == true)
                 {
-                    InvalidateStatsCache();
+                    _cache.Invalidate(StatsCacheKey);
                     _ = LoadDataAsync();
                 }
             }
@@ -363,8 +355,8 @@ namespace MonBureau.UI.ViewModels
             try
             {
                 var result = MessageBox.Show(
-                    $"Êtes-vous sûr de vouloir supprimer le client '{client.FullName}' ?\n\nTous les dossiers associés seront également supprimés.",
-                    "Confirmer la suppression",
+                    $"Supprimer '{client.FullName}' ?\n\nTous les dossiers associés seront supprimés.",
+                    "Confirmer",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Warning);
 
@@ -372,16 +364,16 @@ namespace MonBureau.UI.ViewModels
                 {
                     await _unitOfWork.Clients.DeleteAsync(client);
                     await _unitOfWork.SaveChangesAsync();
-                    InvalidateStatsCache();
+                    _cache.Invalidate(StatsCacheKey);
                     await LoadDataAsync();
 
-                    MessageBox.Show("Client supprimé avec succès", "Succès",
+                    MessageBox.Show("Client supprimé", "Succès",
                         MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Erreur lors de la suppression: {ex.Message}", "Erreur",
+                MessageBox.Show($"Erreur: {ex.Message}", "Erreur",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -394,8 +386,8 @@ namespace MonBureau.UI.ViewModels
             try
             {
                 var result = MessageBox.Show(
-                    $"Êtes-vous sûr de vouloir supprimer le dossier '{caseEntity.Number}' ?\n\nTous les documents et dépenses associés seront également supprimés.",
-                    "Confirmer la suppression",
+                    $"Supprimer '{caseEntity.Number}' ?\n\nTous les documents seront supprimés.",
+                    "Confirmer",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Warning);
 
@@ -403,16 +395,16 @@ namespace MonBureau.UI.ViewModels
                 {
                     await _unitOfWork.Cases.DeleteAsync(caseEntity);
                     await _unitOfWork.SaveChangesAsync();
-                    InvalidateStatsCache();
+                    _cache.Invalidate(StatsCacheKey);
                     await LoadDataAsync();
 
-                    MessageBox.Show("Dossier supprimé avec succès", "Succès",
+                    MessageBox.Show("Dossier supprimé", "Succès",
                         MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Erreur lors de la suppression: {ex.Message}", "Erreur",
+                MessageBox.Show($"Erreur: {ex.Message}", "Erreur",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -425,8 +417,8 @@ namespace MonBureau.UI.ViewModels
             try
             {
                 var result = MessageBox.Show(
-                    $"Êtes-vous sûr de vouloir supprimer '{item.Name}' ?",
-                    "Confirmer la suppression",
+                    $"Supprimer '{item.Name}' ?",
+                    "Confirmer",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Warning);
 
@@ -434,22 +426,22 @@ namespace MonBureau.UI.ViewModels
                 {
                     await _unitOfWork.CaseItems.DeleteAsync(item);
                     await _unitOfWork.SaveChangesAsync();
-                    InvalidateStatsCache();
+                    _cache.Invalidate(StatsCacheKey);
                     await LoadDataAsync();
 
-                    MessageBox.Show("Élément supprimé avec succès", "Succès",
+                    MessageBox.Show("Élément supprimé", "Succès",
                         MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Erreur lors de la suppression: {ex.Message}", "Erreur",
+                MessageBox.Show($"Erreur: {ex.Message}", "Erreur",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
         /// <summary>
-        /// FIXED: Search executes in database with limits
+        /// FIXED: Search uses separate DbContext
         /// </summary>
         [RelayCommand]
         private async Task Search()
@@ -470,28 +462,29 @@ namespace MonBureau.UI.ViewModels
                 IsLoading = true;
                 var searchLower = SearchText.ToLower();
 
-                // FIXED: All queries have .Take() limits
-                var clientsTask = _context.Clients
+                await using var context = await _contextFactory.CreateDbContextAsync(ct);
+
+                var clientsTask = context.Clients
                     .AsNoTracking()
                     .Where(c => c.FirstName.ToLower().Contains(searchLower) ||
                                c.LastName.ToLower().Contains(searchLower))
-                    .Take(20) // ← CRITICAL FIX
+                    .Take(20)
                     .ToListAsync(ct);
 
-                var casesTask = _context.Cases
+                var casesTask = context.Cases
                     .AsNoTracking()
                     .Include(c => c.Client)
                     .Where(c => c.Number.ToLower().Contains(searchLower) ||
                                c.Title.ToLower().Contains(searchLower))
-                    .Take(20) // ← CRITICAL FIX
+                    .Take(20)
                     .ToListAsync(ct);
 
-                var itemsTask = _context.CaseItems
+                var itemsTask = context.CaseItems
                     .AsNoTracking()
                     .Include(i => i.Case)
                         .ThenInclude(c => c.Client)
                     .Where(i => i.Name.ToLower().Contains(searchLower))
-                    .Take(20) // ← CRITICAL FIX
+                    .Take(20)
                     .ToListAsync(ct);
 
                 await Task.WhenAll(clientsTask, casesTask, itemsTask);
@@ -507,11 +500,11 @@ namespace MonBureau.UI.ViewModels
             }
             catch (OperationCanceledException)
             {
-                // Cancelled, ignore
+                // Cancelled
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Erreur lors de la recherche: {ex.Message}", "Erreur",
+                MessageBox.Show($"Erreur: {ex.Message}", "Erreur",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
@@ -544,20 +537,10 @@ namespace MonBureau.UI.ViewModels
             _disposed = true;
             GC.SuppressFinalize(this);
 
-            System.Diagnostics.Debug.WriteLine("[DashboardViewModel] Disposal complete");
-        }
-
-        ~DashboardViewModel()
-        {
-            if (!_disposed)
-            {
-                System.Diagnostics.Debug.WriteLine("[DashboardViewModel] ⚠️ WARNING: Finalizer called!");
-            }
+            System.Diagnostics.Debug.WriteLine("[DashboardViewModel] ✅ Disposed");
         }
 
         #endregion
-
-        private void InvalidateStatsCache() => _cache.Invalidate(StatsCacheKey);
 
         private sealed class DashboardStatistics
         {

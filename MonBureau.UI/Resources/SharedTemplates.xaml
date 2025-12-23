@@ -9,7 +9,170 @@
     <converters:GreaterThanOneConverter x:Key="GreaterThanOne" />
 
     <!--  ========================================  -->
-    <!--  Loading Overlay Template  -->
+    <!--  STAT CARD TEMPLATE  -->
+    <!--  ========================================  -->
+    <DataTemplate x:Key="StatCardTemplate">
+        <Border
+            Padding="24"
+            Background="{Binding Color}"
+            CornerRadius="16">
+            <Border.Effect>
+                <DropShadowEffect
+                    BlurRadius="16"
+                    Opacity="0.15"
+                    ShadowDepth="4"
+                    Color="#000000" />
+            </Border.Effect>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <TextBlock
+                    Grid.Row="0"
+                    FontSize="14"
+                    FontWeight="Medium"
+                    Foreground="White"
+                    Opacity="0.9"
+                    Text="{Binding Label}" />
+                <TextBlock
+                    Grid.Row="1"
+                    Margin="0,12,0,0"
+                    FontSize="40"
+                    FontWeight="Bold"
+                    Foreground="White"
+                    Text="{Binding Value}" />
+                <TextBlock
+                    Grid.Row="2"
+                    Margin="0,8,0,0"
+                    FontFamily="{StaticResource IconFont}"
+                    FontSize="28"
+                    Foreground="White"
+                    Opacity="0.3"
+                    Text="{Binding Icon}" />
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <!--  ========================================  -->
+    <!--  RECENT ITEM CARD (Clients/Cases)  -->
+    <!--  ========================================  -->
+    <DataTemplate x:Key="RecentItemCard">
+        <Border
+            Margin="0,0,0,12"
+            Padding="16"
+            Background="{StaticResource BackgroundBrush}"
+            BorderBrush="{StaticResource BorderBrush}"
+            BorderThickness="1"
+            CornerRadius="8"
+            Cursor="Hand">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!--  Avatar/Icon  -->
+                <Border
+                    Grid.Column="0"
+                    Width="40"
+                    Height="40"
+                    Margin="0,0,12,0"
+                    Background="{StaticResource PrimaryBrush}"
+                    CornerRadius="20">
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        FontSize="16"
+                        FontWeight="Bold"
+                        Foreground="White"
+                        Text="{Binding Icon}" />
+                </Border>
+
+                <!--  Info  -->
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock
+                        FontSize="14"
+                        FontWeight="SemiBold"
+                        Foreground="{StaticResource TextPrimaryBrush}"
+                        Text="{Binding Title}" />
+                    <TextBlock
+                        FontSize="12"
+                        Foreground="{StaticResource TextSecondaryBrush}"
+                        Text="{Binding Subtitle}" />
+                </StackPanel>
+
+                <!--  Actions  -->
+                <ContentControl
+                    Grid.Column="2"
+                    Content="{Binding}"
+                    ContentTemplate="{StaticResource ActionButtonsTemplate}" />
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <!--  ========================================  -->
+    <!--  DATA GRID TEMPLATE  -->
+    <!--  ========================================  -->
+    <ControlTemplate x:Key="DataGridCardTemplate">
+        <Border Style="{StaticResource Card}" Visibility="{Binding Items.Count, Converter={StaticResource BoolToVis}}">
+            <DataGrid
+                AutoGenerateColumns="False"
+                BorderThickness="0"
+                CanUserAddRows="False"
+                CanUserDeleteRows="False"
+                GridLinesVisibility="None"
+                HeadersVisibility="Column"
+                IsReadOnly="True"
+                ItemsSource="{Binding Items}"
+                RowHeight="60"
+                SelectedItem="{Binding SelectedItem}">
+                <DataGrid.ColumnHeaderStyle>
+                    <Style TargetType="DataGridColumnHeader">
+                        <Setter Property="Background" Value="{StaticResource BackgroundBrush}" />
+                        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+                        <Setter Property="FontWeight" Value="SemiBold" />
+                        <Setter Property="FontSize" Value="13" />
+                        <Setter Property="Padding" Value="12,8" />
+                        <Setter Property="BorderThickness" Value="0,0,0,1" />
+                        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+                    </Style>
+                </DataGrid.ColumnHeaderStyle>
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow">
+                        <Setter Property="Background" Value="Transparent" />
+                        <Setter Property="BorderThickness" Value="0,0,0,1" />
+                        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{StaticResource HoverBrush}" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.RowStyle>
+            </DataGrid>
+        </Border>
+    </ControlTemplate>
+
+    <!--  ========================================  -->
+    <!--  FORM FIELD TEMPLATE  -->
+    <!--  ========================================  -->
+    <DataTemplate x:Key="FormFieldTemplate">
+        <StackPanel Margin="0,0,0,20">
+            <TextBlock
+                Margin="0,0,0,8"
+                FontSize="13"
+                FontWeight="Medium"
+                Foreground="{StaticResource TextPrimaryBrush}"
+                Text="{Binding Label}" />
+            <TextBox Style="{StaticResource ModernTextBox}" Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" />
+        </StackPanel>
+    </DataTemplate>
+
+    <!--  ========================================  -->
+    <!--  LOADING OVERLAY TEMPLATE  -->
     <!--  ========================================  -->
     <ControlTemplate x:Key="LoadingOverlayTemplate">
         <Border
@@ -33,9 +196,9 @@
     </ControlTemplate>
 
     <!--  ========================================  -->
-    <!--  Page Header Template  -->
+    <!--  PAGE HEADER TEMPLATE  -->
     <!--  ========================================  -->
-    <DataTemplate x:Key="PageHeaderTemplate">
+    <ControlTemplate x:Key="PageHeaderTemplate">
         <Grid Margin="0,0,0,24">
             <StackPanel>
                 <TextBlock
@@ -53,13 +216,20 @@
                 Padding="20,12"
                 HorizontalAlignment="Right"
                 Command="{Binding AddCommand}"
-                Content="{Binding AddButtonText}"
-                Style="{StaticResource ModernButton}" />
+                Style="{StaticResource ModernButton}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock
+                        Margin="0,0,8,0"
+                        FontFamily="Segoe MDL2 Assets"
+                        Text="&#xE710;" />
+                    <TextBlock Text="{Binding AddButtonText}" />
+                </StackPanel>
+            </Button>
         </Grid>
-    </DataTemplate>
+    </ControlTemplate>
 
     <!--  ========================================  -->
-    <!--  Search Bar Template  -->
+    <!--  SEARCH BAR TEMPLATE  -->
     <!--  ========================================  -->
     <ControlTemplate x:Key="SearchBarTemplate">
         <Border Margin="0,0,0,24" Style="{StaticResource Card}">
@@ -88,7 +258,7 @@
                         VerticalAlignment="Center"
                         Foreground="{StaticResource TextTertiaryBrush}"
                         IsHitTestVisible="False"
-                        Text="{Binding SearchPlaceholder}">
+                        Text="Rechercher...">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
                                 <Setter Property="Visibility" Value="Collapsed" />
@@ -129,14 +299,13 @@
                     <Run Text="{Binding Items.Count, Mode=OneWay}" />
                     <Run Text="/" />
                     <Run Text="{Binding TotalItems, Mode=OneWay}" />
-                    <Run Text="{Binding EntityPluralName}" />
                 </TextBlock>
             </Grid>
         </Border>
     </ControlTemplate>
 
     <!--  ========================================  -->
-    <!--  Pagination Template  -->
+    <!--  PAGINATION TEMPLATE  -->
     <!--  ========================================  -->
     <ControlTemplate x:Key="PaginationTemplate">
         <Border
@@ -175,9 +344,9 @@
     </ControlTemplate>
 
     <!--  ========================================  -->
-    <!--  Empty State Template  -->
+    <!--  EMPTY STATE TEMPLATE  -->
     <!--  ========================================  -->
-    <DataTemplate x:Key="EmptyStateTemplate">
+    <ControlTemplate x:Key="EmptyStateTemplate">
         <Border
             Padding="60"
             HorizontalAlignment="Center"
@@ -188,25 +357,25 @@
                     Margin="0,0,0,16"
                     HorizontalAlignment="Center"
                     FontSize="48"
-                    Text="{Binding EmptyStateIcon}" />
+                    Text="{Binding EmptyIcon}" />
                 <TextBlock
                     Margin="0,0,0,8"
                     HorizontalAlignment="Center"
                     FontSize="18"
                     FontWeight="SemiBold"
                     Foreground="{StaticResource TextPrimaryBrush}"
-                    Text="{Binding EmptyStateTitle}" />
+                    Text="{Binding EmptyTitle}" />
                 <TextBlock
                     HorizontalAlignment="Center"
                     FontSize="14"
                     Foreground="{StaticResource TextSecondaryBrush}"
-                    Text="{Binding EmptyStateMessage}" />
+                    Text="{Binding EmptyMessage}" />
             </StackPanel>
         </Border>
-    </DataTemplate>
+    </ControlTemplate>
 
     <!--  ========================================  -->
-    <!--  Action Buttons Template  -->
+    <!--  ACTION BUTTONS TEMPLATE  -->
     <!--  ========================================  -->
     <DataTemplate x:Key="ActionButtonsTemplate">
         <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
@@ -239,5 +408,35 @@
             </Button>
         </StackPanel>
     </DataTemplate>
+
+    <!--  ========================================  -->
+    <!--  DIALOG BUTTONS TEMPLATE  -->
+    <!--  ========================================  -->
+    <ControlTemplate x:Key="DialogButtonsTemplate">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Button
+                Grid.Column="1"
+                Margin="0,0,12,0"
+                Padding="24,12"
+                Command="{Binding CancelCommand}"
+                CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"
+                Content="Annuler"
+                Style="{StaticResource OutlineButton}" />
+
+            <Button
+                Grid.Column="2"
+                Padding="24,12"
+                Command="{Binding SaveCommand}"
+                CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"
+                Content="Enregistrer"
+                Style="{StaticResource PrimaryButton}" />
+        </Grid>
+    </ControlTemplate>
 
 </ResourceDictionary>

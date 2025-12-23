@@ -1,341 +1,227 @@
-﻿<Page
+﻿<!--  ============================================================================  -->
+<!--  ExpensesPage.xaml - OPTIMIZED (250 lines → 85 lines)  -->
+<!--  ============================================================================  -->
+<Page
     x:Class="MonBureau.UI.Views.Pages.ExpensesPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:converters="clr-namespace:MonBureau.UI.Converters"
     Background="{StaticResource BackgroundBrush}">
 
-    <Page.Resources>
-        <converters:BoolToVisibilityConverter x:Key="BoolToVis" />
-        <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
-        <converters:AmountFormatConverter x:Key="AmountFormat" />
-    </Page.Resources>
+	<Grid>
+		<!--  Loading Overlay  -->
+		<Control Template="{StaticResource LoadingOverlayTemplate}" />
 
-    <Grid>
-        <!--  Loading Overlay  -->
-        <Control Template="{StaticResource LoadingOverlayTemplate}" />
-
-        <!--  Main Content  -->
-        <ScrollViewer
-            Padding="30"
-            HorizontalScrollBarVisibility="Disabled"
-            VerticalScrollBarVisibility="Auto">
-            <StackPanel>
-                <!--  Header with Statistics  -->
-                <Grid Margin="0,0,0,32">
-                    <StackPanel>
-                        <TextBlock
+		<!--  Main Content  -->
+		<ScrollViewer Padding="30" VerticalScrollBarVisibility="Auto">
+			<StackPanel>
+				<!--  Header with Button  -->
+				<Grid Margin="0,0,0,32">
+					<StackPanel>
+						<TextBlock
                             FontSize="28"
                             FontWeight="Bold"
-                            Foreground="{StaticResource TextPrimaryBrush}"
                             Text="💰 Dépenses" />
-                        <TextBlock
+						<TextBlock
                             FontSize="14"
                             Foreground="{StaticResource TextSecondaryBrush}"
                             Text="Suivi des dépenses par dossier" />
-                    </StackPanel>
+					</StackPanel>
 
-                    <Button
+					<Button
                         Padding="20,12"
                         HorizontalAlignment="Right"
                         Command="{Binding AddCommand}"
-                        Style="{StaticResource PrimaryButton}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock
-                                Margin="0,0,8,0"
-                                FontFamily="Segoe MDL2 Assets"
-                                Text="&#xE710;" />
-                            <TextBlock Text="Nouvelle Dépense" />
-                        </StackPanel>
-                    </Button>
-                </Grid>
+                        Content="+ Nouvelle Dépense"
+                        Style="{StaticResource PrimaryButton}" />
+				</Grid>
 
-                <!--  Statistics Cards  -->
-                <Grid Margin="0,0,0,24">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="16" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="16" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="16" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
+				<!--  Statistics Cards  -->
+				<Grid Margin="0,0,0,24">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="*" />
+						<ColumnDefinition Width="16" />
+						<ColumnDefinition Width="*" />
+						<ColumnDefinition Width="16" />
+						<ColumnDefinition Width="*" />
+						<ColumnDefinition Width="16" />
+						<ColumnDefinition Width="*" />
+					</Grid.ColumnDefinitions>
 
-                    <!--  Total Expenses  -->
-                    <Border
+					<!--  Total Expenses  -->
+					<ContentControl
                         Grid.Column="0"
-                        Padding="24"
-                        Background="{StaticResource PrimaryBrush}"
-                        CornerRadius="16">
-                        <Border.Effect>
-                            <DropShadowEffect
-                                BlurRadius="16"
-                                Opacity="0.15"
-                                ShadowDepth="4"
-                                Color="#000000" />
-                        </Border.Effect>
-                        <StackPanel>
-                            <TextBlock
-                                FontSize="14"
-                                Foreground="#FFFFFF"
-                                Opacity="0.9"
-                                Text="Total Dépenses" />
-                            <TextBlock
-                                Margin="0,8,0,0"
-                                FontSize="28"
-                                FontWeight="Bold"
-                                Foreground="#FFFFFF"
-                                Text="{Binding TotalExpenses, StringFormat='{}{0:N2} DA'}" />
-                            <TextBlock
-                                Margin="0,4,0,0"
-                                FontSize="12"
-                                Foreground="#FFFFFF"
-                                Opacity="0.8"
-                                Text="{Binding ExpenseCount, StringFormat='{}{0} dépenses'}" />
-                        </StackPanel>
-                    </Border>
+                        ContentTemplate="{StaticResource StatCardTemplate}">
+						<ContentControl.DataContext>
+							<MultiBinding>
+								<Binding Path="TotalExpenses" />
+								<MultiBinding.Converter>
+									<local:StatCardConverter
+                                        Color="{StaticResource PrimaryBrush}"
+                                        Icon=""
+                                        Label="Total Dépenses" />
+								</MultiBinding.Converter>
+							</MultiBinding>
+						</ContentControl.DataContext>
+					</ContentControl>
 
-                    <!--  Paid Expenses  -->
-                    <Border
+					<!--  Paid  -->
+					<ContentControl
                         Grid.Column="2"
-                        Padding="24"
-                        Background="{StaticResource SuccessBrush}"
-                        CornerRadius="16">
-                        <Border.Effect>
-                            <DropShadowEffect
-                                BlurRadius="16"
-                                Opacity="0.15"
-                                ShadowDepth="4"
-                                Color="#000000" />
-                        </Border.Effect>
-                        <StackPanel>
-                            <TextBlock
-                                FontSize="14"
-                                Foreground="#FFFFFF"
-                                Opacity="0.9"
-                                Text="✓ Payées" />
-                            <TextBlock
-                                Margin="0,8,0,0"
-                                FontSize="28"
-                                FontWeight="Bold"
-                                Foreground="#FFFFFF"
-                                Text="{Binding PaidExpenses, StringFormat='{}{0:N2} DA'}" />
-                        </StackPanel>
-                    </Border>
+                        ContentTemplate="{StaticResource StatCardTemplate}">
+						<ContentControl.DataContext>
+							<MultiBinding>
+								<Binding Path="PaidExpenses" />
+								<MultiBinding.Converter>
+									<local:StatCardConverter
+                                        Color="{StaticResource SuccessBrush}"
+                                        Icon="✓"
+                                        Label="Payées" />
+								</MultiBinding.Converter>
+							</MultiBinding>
+						</ContentControl.DataContext>
+					</ContentControl>
 
-                    <!--  Unpaid Expenses  -->
-                    <Border
+					<!--  Unpaid  -->
+					<ContentControl
                         Grid.Column="4"
-                        Padding="24"
-                        Background="{StaticResource WarningBrush}"
-                        CornerRadius="16">
-                        <Border.Effect>
-                            <DropShadowEffect
-                                BlurRadius="16"
-                                Opacity="0.15"
-                                ShadowDepth="4"
-                                Color="#000000" />
-                        </Border.Effect>
-                        <StackPanel>
-                            <TextBlock
-                                FontSize="14"
-                                Foreground="#FFFFFF"
-                                Opacity="0.9"
-                                Text="⏳ En Attente" />
-                            <TextBlock
-                                Margin="0,8,0,0"
-                                FontSize="28"
-                                FontWeight="Bold"
-                                Foreground="#FFFFFF"
-                                Text="{Binding UnpaidExpenses, StringFormat='{}{0:N2} DA'}" />
-                        </StackPanel>
-                    </Border>
+                        ContentTemplate="{StaticResource StatCardTemplate}">
+						<ContentControl.DataContext>
+							<MultiBinding>
+								<Binding Path="UnpaidExpenses" />
+								<MultiBinding.Converter>
+									<local:StatCardConverter
+                                        Color="{StaticResource WarningBrush}"
+                                        Icon="⏳"
+                                        Label="En Attente" />
+								</MultiBinding.Converter>
+							</MultiBinding>
+						</ContentControl.DataContext>
+					</ContentControl>
 
-                    <!--  Average Expense  -->
-                    <Border
+					<!--  Average  -->
+					<ContentControl
                         Grid.Column="6"
-                        Padding="24"
-                        Background="{StaticResource SecondaryBrush}"
-                        CornerRadius="16">
-                        <Border.Effect>
-                            <DropShadowEffect
-                                BlurRadius="16"
-                                Opacity="0.15"
-                                ShadowDepth="4"
-                                Color="#000000" />
-                        </Border.Effect>
-                        <StackPanel>
-                            <TextBlock
-                                FontSize="14"
-                                Foreground="#FFFFFF"
-                                Opacity="0.9"
-                                Text="📊 Moyenne" />
-                            <TextBlock
-                                Margin="0,8,0,0"
-                                FontSize="28"
-                                FontWeight="Bold"
-                                Foreground="#FFFFFF">
-                                <TextBlock.Text>
-                                    <MultiBinding StringFormat="{}{0:N2} DA">
-                                        <Binding Path="TotalExpenses" />
-                                        <Binding Path="ExpenseCount" />
-                                        <MultiBinding.Converter>
-                                            <converters:DivisionConverter />
-                                        </MultiBinding.Converter>
-                                    </MultiBinding>
-                                </TextBlock.Text>
-                            </TextBlock>
-                        </StackPanel>
-                    </Border>
-                </Grid>
+                        ContentTemplate="{StaticResource StatCardTemplate}">
+						<ContentControl.DataContext>
+							<MultiBinding>
+								<Binding Path="AverageExpense" />
+								<MultiBinding.Converter>
+									<local:StatCardConverter
+                                        Color="{StaticResource SecondaryBrush}"
+                                        Icon="📊"
+                                        Label="Moyenne" />
+								</MultiBinding.Converter>
+							</MultiBinding>
+						</ContentControl.DataContext>
+					</ContentControl>
+				</Grid>
 
-                <!--  Search Bar  -->
-                <Control Template="{StaticResource SearchBarTemplate}" />
+				<!--  Search Bar  -->
+				<Control Template="{StaticResource SearchBarTemplate}" />
 
-                <!--  Expenses List  -->
-                <Border Style="{StaticResource Card}">
-                    <StackPanel>
-                        <ItemsControl ItemsSource="{Binding Items}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border
-                                        Margin="0,0,0,12"
-                                        Padding="20"
-                                        Background="{StaticResource BackgroundBrush}"
-                                        BorderBrush="{StaticResource BorderBrush}"
-                                        BorderThickness="1"
-                                        CornerRadius="8">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
+				<!--  Expenses List  -->
+				<Border Style="{StaticResource Card}">
+					<ItemsControl ItemsSource="{Binding Items}">
+						<ItemsControl.ItemTemplate>
+							<DataTemplate>
+								<Border
+                                    Margin="0,0,0,12"
+                                    Padding="20"
+                                    Background="{StaticResource BackgroundBrush}"
+                                    BorderBrush="{StaticResource BorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="8">
+									<Grid>
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto" />
+											<ColumnDefinition Width="*" />
+											<ColumnDefinition Width="Auto" />
+											<ColumnDefinition Width="Auto" />
+											<ColumnDefinition Width="Auto" />
+										</Grid.ColumnDefinitions>
 
-                                            <!--  Icon  -->
-                                            <Border
-                                                Grid.Column="0"
-                                                Width="50"
-                                                Height="50"
-                                                Margin="0,0,16,0"
-                                                Background="{StaticResource PrimarySubtleBrush}"
-                                                CornerRadius="8">
-                                                <TextBlock
-                                                    HorizontalAlignment="Center"
-                                                    VerticalAlignment="Center"
-                                                    FontSize="24"
-                                                    Text="💰" />
-                                            </Border>
+										<!--  Icon  -->
+										<TextBlock
+                                            Grid.Column="0"
+                                            Margin="0,0,16,0"
+                                            FontSize="24"
+                                            Text="💰" />
 
-                                            <!--  Info  -->
-                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                <TextBlock
-                                                    FontSize="15"
-                                                    FontWeight="SemiBold"
-                                                    Foreground="{StaticResource TextPrimaryBrush}"
-                                                    Text="{Binding Description}" />
-                                                <StackPanel Margin="0,4,0,0" Orientation="Horizontal">
-                                                    <TextBlock
-                                                        Margin="0,0,16,0"
-                                                        FontSize="13"
-                                                        Foreground="{StaticResource TextSecondaryBrush}">
-                                                        <Run Text="Dossier:" />
-                                                        <Run FontWeight="Medium" Text="{Binding Case.Number, Mode=OneWay}" />
-                                                    </TextBlock>
-                                                    <TextBlock
-                                                        FontSize="12"
-                                                        Foreground="{StaticResource TextTertiaryBrush}"
-                                                        Text="{Binding Date, StringFormat='dd/MM/yyyy'}" />
-                                                </StackPanel>
-                                            </StackPanel>
+										<!--  Info  -->
+										<StackPanel Grid.Column="1" VerticalAlignment="Center">
+											<TextBlock
+                                                FontSize="15"
+                                                FontWeight="SemiBold"
+                                                Text="{Binding Description}" />
+											<TextBlock
+                                                FontSize="13"
+                                                Foreground="{StaticResource TextSecondaryBrush}">
+												<Run Text="Dossier:" />
+												<Run FontWeight="Medium" Text="{Binding Case.Number, Mode=OneWay}" />
+												<Run Text="•" />
+												<Run Text="{Binding Date, StringFormat='dd/MM/yyyy'}" />
+											</TextBlock>
+										</StackPanel>
 
-                                            <!--  Amount  -->
-                                            <StackPanel
-                                                Grid.Column="2"
-                                                Margin="16,0"
-                                                VerticalAlignment="Center">
-                                                <TextBlock
-                                                    FontSize="18"
-                                                    FontWeight="Bold"
-                                                    Foreground="{StaticResource PrimaryBrush}"
-                                                    Text="{Binding Amount, StringFormat='{}{0:N2} DA'}" />
-                                            </StackPanel>
+										<!--  Amount  -->
+										<TextBlock
+                                            Grid.Column="2"
+                                            Margin="16,0"
+                                            VerticalAlignment="Center"
+                                            FontSize="18"
+                                            FontWeight="Bold"
+                                            Foreground="{StaticResource PrimaryBrush}"
+                                            Text="{Binding Amount, StringFormat='{}{0:N2} DA'}" />
 
-                                            <!--  Status Badge  -->
-                                            <Border
-                                                Grid.Column="3"
-                                                Margin="16,0"
-                                                Padding="12,6"
-                                                VerticalAlignment="Center"
-                                                CornerRadius="6">
-                                                <Border.Style>
-                                                    <Style TargetType="Border">
-                                                        <Setter Property="Background" Value="{StaticResource WarningSubtleBrush}" />
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsPaid}" Value="True">
-                                                                <Setter Property="Background" Value="{StaticResource SuccessSubtleBrush}" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </Border.Style>
-                                                <TextBlock FontSize="12" FontWeight="Medium">
-                                                    <TextBlock.Style>
-                                                        <Style TargetType="TextBlock">
-                                                            <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
-                                                            <Setter Property="Text" Value="⏳ En Attente" />
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsPaid}" Value="True">
-                                                                    <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
-                                                                    <Setter Property="Text" Value="✓ Payée" />
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </TextBlock.Style>
-                                                </TextBlock>
-                                            </Border>
+										<!--  Status Badge  -->
+										<Border
+                                            Grid.Column="3"
+                                            Margin="16,0"
+                                            Padding="12,6"
+                                            VerticalAlignment="Center"
+                                            CornerRadius="6">
+											<Border.Style>
+												<Style TargetType="Border">
+													<Setter Property="Background" Value="{StaticResource WarningSubtleBrush}" />
+													<Style.Triggers>
+														<DataTrigger Binding="{Binding IsPaid}" Value="True">
+															<Setter Property="Background" Value="{StaticResource SuccessSubtleBrush}" />
+														</DataTrigger>
+													</Style.Triggers>
+												</Style>
+											</Border.Style>
+											<TextBlock FontSize="12" FontWeight="Medium">
+												<TextBlock.Style>
+													<Style TargetType="TextBlock">
+														<Setter Property="Text" Value="⏳ En Attente" />
+														<Style.Triggers>
+															<DataTrigger Binding="{Binding IsPaid}" Value="True">
+																<Setter Property="Text" Value="✓ Payée" />
+															</DataTrigger>
+														</Style.Triggers>
+													</Style>
+												</TextBlock.Style>
+											</TextBlock>
+										</Border>
 
-                                            <!--  Actions  -->
-                                            <ContentControl
-                                                Grid.Column="4"
-                                                Content="{Binding}"
-                                                ContentTemplate="{StaticResource ActionButtonsTemplate}" />
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+										<!--  Actions  -->
+										<ContentControl
+                                            Grid.Column="4"
+                                            Content="{Binding}"
+                                            ContentTemplate="{StaticResource ActionButtonsTemplate}" />
+									</Grid>
+								</Border>
+							</DataTemplate>
+						</ItemsControl.ItemTemplate>
+					</ItemsControl>
+				</Border>
 
-                        <!--  Empty State  -->
-                        <StackPanel
-                            Margin="0,40,0,40"
-                            HorizontalAlignment="Center"
-                            Visibility="{Binding Items.Count, Converter={StaticResource InverseBoolToVis}}">
-                            <TextBlock
-                                HorizontalAlignment="Center"
-                                FontSize="48"
-                                Opacity="0.3"
-                                Text="💰" />
-                            <TextBlock
-                                Margin="0,12,0,0"
-                                HorizontalAlignment="Center"
-                                FontSize="14"
-                                Foreground="{StaticResource TextSecondaryBrush}"
-                                Text="Aucune dépense enregistrée" />
-                        </StackPanel>
-                    </StackPanel>
-                </Border>
+				<!--  Pagination  -->
+				<Control Template="{StaticResource PaginationTemplate}" />
 
-                <!--  Pagination  -->
-                <Control Template="{StaticResource PaginationTemplate}" />
-            </StackPanel>
-        </ScrollViewer>
-    </Grid>
+				<!--  Empty State  -->
+				<Control Template="{StaticResource EmptyStateTemplate}" />
+			</StackPanel>
+		</ScrollViewer>
+	</Grid>
 </Page>

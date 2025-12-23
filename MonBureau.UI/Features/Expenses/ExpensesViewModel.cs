@@ -8,8 +8,6 @@ using MonBureau.Core.Entities;
 using MonBureau.Core.Interfaces;
 using MonBureau.UI.ViewModels.Base;
 using MonBureau.UI.Views.Dialogs;
-using MonBureau.UI.Features.Expenses;
-
 namespace MonBureau.UI.Features.Expenses
 {
     /// <summary>
@@ -19,7 +17,6 @@ namespace MonBureau.UI.Features.Expenses
     {
         [ObservableProperty]
         private decimal _totalExpenses;
-
         [ObservableProperty]
         private decimal _paidExpenses;
 
@@ -66,9 +63,9 @@ namespace MonBureau.UI.Features.Expenses
             await CalculateStatisticsAsync();
         }
 
-        protected override async Task OnItemsLoaded()
+        // FIXED: Removed override keyword - this is a custom method
+        protected async Task OnItemsLoadedAsync()
         {
-            await base.OnItemsLoaded();
             await CalculateStatisticsAsync();
         }
 
@@ -97,10 +94,19 @@ namespace MonBureau.UI.Features.Expenses
         }
 
         protected override Window CreateAddDialog()
-            => new ExpenseDialog();
+        {
+            var dialog = new ExpenseDialog();
+            dialog.DataContext = App.GetService<ExpenseDialogViewModel>();
+            return dialog;
+        }
 
         protected override Window CreateEditDialog(Expense entity)
-            => new ExpenseDialog(entity);
+        {
+            var viewModel = App.GetService<ExpenseDialogViewModel>();
+            var dialog = new ExpenseDialog();
+            dialog.DataContext = viewModel;
+            return dialog;
+        }
 
         protected override string GetEntityName()
             => "Dépense";
@@ -109,6 +115,6 @@ namespace MonBureau.UI.Features.Expenses
             => "Dépenses";
 
         protected override string GetEntityDisplayName(Expense entity)
-            => entity.DisplayName;
+            => entity.Description;
     }
 }

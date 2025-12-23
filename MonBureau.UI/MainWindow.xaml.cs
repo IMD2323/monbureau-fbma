@@ -7,7 +7,7 @@ using MonBureau.UI.ViewModels;
 namespace MonBureau.UI.Views
 {
     /// <summary>
-    /// MainWindow - FIXED with complete navigation
+    /// MainWindow - FIXED with complete navigation including Expenses and Appointments
     /// </summary>
     public partial class MainWindow : Window, IDisposable
     {
@@ -167,6 +167,21 @@ namespace MonBureau.UI.Views
             HighlightButton(DocumentsButton);
         }
 
+        // FIXED: Added missing navigation methods
+        private void NavigateToExpenses_Click(object sender, RoutedEventArgs e)
+        {
+            System.Diagnostics.Debug.WriteLine("[MainWindow] Navigate to Expenses clicked");
+            _navigationService?.NavigateToExpenses();
+            HighlightButton(ExpensesButton);
+        }
+
+        private void NavigateToAppointments_Click(object sender, RoutedEventArgs e)
+        {
+            System.Diagnostics.Debug.WriteLine("[MainWindow] Navigate to Appointments clicked");
+            _navigationService?.NavigateToAppointments();
+            HighlightButton(AppointmentsButton);
+        }
+
         private void OpenBackup_Click(object sender, RoutedEventArgs e)
         {
             System.Diagnostics.Debug.WriteLine("[MainWindow] Navigate to Backup clicked");
@@ -197,6 +212,8 @@ namespace MonBureau.UI.Views
                 ClientsButton.Style = (Style)FindResource("NavButton");
                 CasesButton.Style = (Style)FindResource("NavButton");
                 DocumentsButton.Style = (Style)FindResource("NavButton");
+                ExpensesButton.Style = (Style)FindResource("NavButton");
+                AppointmentsButton.Style = (Style)FindResource("NavButton");
                 BackupButton.Style = (Style)FindResource("NavButton");
                 SettingsButton.Style = (Style)FindResource("NavButton");
 

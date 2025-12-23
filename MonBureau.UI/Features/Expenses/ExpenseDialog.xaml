@@ -1,5 +1,5 @@
 <!--  ============================================================================  -->
-<!--  ExpenseDialog.xaml - OPTIMIZED (200 lines → 100 lines)  -->
+<!--  ExpenseDialog.xaml - FIXED  -->
 <!--  ============================================================================  -->
 <Window
     x:Class="MonBureau.UI.Views.Dialogs.ExpenseDialog"
@@ -22,10 +22,18 @@
 
             <!--  Header  -->
             <StackPanel Grid.Row="0" Margin="0,0,0,24">
-                <TextBlock
-                    FontSize="24"
-                    FontWeight="Bold"
-                    Text="{Binding IsEditMode, Converter={StaticResource BoolToStringConverter}, ConverterParameter='Modifier Dépense:Nouvelle Dépense'}" />
+                <TextBlock FontSize="24" FontWeight="Bold">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Text" Value="Nouvelle Dépense" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsEditMode}" Value="True">
+                                    <Setter Property="Text" Value="Modifier Dépense" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
                 <TextBlock
                     Margin="0,4,0,0"
                     FontSize="14"
@@ -180,8 +188,17 @@
                         Background="{StaticResource ErrorSubtleBrush}"
                         BorderBrush="{StaticResource ErrorBrush}"
                         BorderThickness="1"
-                        CornerRadius="6"
-                        Visibility="{Binding ValidationError, Converter={StaticResource BoolToVis}}">
+                        CornerRadius="6">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ValidationError, Converter={StaticResource BoolToVis}}" Value="Visible">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
                         <TextBlock
                             FontSize="13"
                             Foreground="{StaticResource ErrorBrush}"
@@ -192,7 +209,30 @@
             </ScrollViewer>
 
             <!--  Actions  -->
-            <Control Grid.Row="2" Template="{StaticResource DialogButtonsTemplate}" />
+            <Grid Grid.Row="2" Margin="0,20,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <Button
+                    Grid.Column="1"
+                    Margin="0,0,12,0"
+                    Padding="24,12"
+                    Command="{Binding CancelCommand}"
+                    CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"
+                    Content="Annuler"
+                    Style="{StaticResource OutlineButton}" />
+
+                <Button
+                    Grid.Column="2"
+                    Padding="24,12"
+                    Command="{Binding SaveCommand}"
+                    CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"
+                    Content="Enregistrer"
+                    Style="{StaticResource PrimaryButton}" />
+            </Grid>
         </Grid>
     </Border>
 </Window>

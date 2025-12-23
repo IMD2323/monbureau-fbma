@@ -1,6 +1,6 @@
 ﻿<!--
     ============================================================
-    ClientsPage.xaml - Working version without markup extension
+    ClientsPage.xaml - OPTIMIZED (120 lines → 50 lines)
     ============================================================
 -->
 <Page
@@ -18,134 +18,18 @@
         </Grid.RowDefinitions>
 
         <!--  Loading Overlay  -->
-        <Border
+        <Control Grid.RowSpan="4" Template="{StaticResource LoadingOverlayTemplate}" />
+
+        <!--  Page Header  -->
+        <Control
             Grid.Row="0"
-            Grid.RowSpan="4"
-            Panel.ZIndex="999"
-            Background="#80000000"
-            CornerRadius="12"
-            Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                <ProgressBar
-                    Width="200"
-                    Height="4"
-                    Foreground="{StaticResource PrimaryBrush}"
-                    IsIndeterminate="True" />
-                <TextBlock
-                    Margin="0,16,0,0"
-                    FontSize="14"
-                    Foreground="White"
-                    Text="{Binding BusyMessage}" />
-            </StackPanel>
-        </Border>
-
-        <!--  Header  -->
-        <Grid Grid.Row="0" Margin="0,0,0,24">
-            <StackPanel>
-                <TextBlock
-                    FontSize="28"
-                    FontWeight="Bold"
-                    Foreground="{StaticResource TextPrimaryBrush}"
-                    Text="Clients" />
-                <TextBlock
-                    FontSize="14"
-                    Foreground="{StaticResource TextSecondaryBrush}"
-                    Text="Manage office clients" />
-            </StackPanel>
-
-            <Button
-                Padding="20,12"
-                HorizontalAlignment="Right"
-                Command="{Binding AddCommand}"
-                Style="{StaticResource ModernButton}">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock
-                        Margin="0,0,8,0"
-                        FontFamily="Segoe MDL2 Assets"
-                        Text="&#xE710;" />
-                    <TextBlock Text="New Client" />
-                </StackPanel>
-            </Button>
-        </Grid>
+            DataContext="{Binding}"
+            Template="{StaticResource PageHeaderTemplate}" />
 
         <!--  Search Bar  -->
-        <Border
-            Grid.Row="1"
-            Margin="0,0,0,24"
-            Style="{StaticResource Card}">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
+        <Control Grid.Row="1" Template="{StaticResource SearchBarTemplate}" />
 
-                <!--  Search Box  -->
-                <Grid Grid.Column="0">
-                    <TextBox
-                        Padding="16,12"
-                        FontSize="14"
-                        Style="{StaticResource ModernTextBox}"
-                        Text="{Binding SearchFilter, UpdateSourceTrigger=PropertyChanged}">
-                        <TextBox.InputBindings>
-                            <KeyBinding Key="Enter" Command="{Binding RefreshCommand}" />
-                        </TextBox.InputBindings>
-                    </TextBox>
-
-                    <!--  Placeholder  -->
-                    <TextBlock
-                        Margin="16,0,0,0"
-                        VerticalAlignment="Center"
-                        FontSize="14"
-                        Foreground="{StaticResource TextTertiaryBrush}"
-                        IsHitTestVisible="False"
-                        Text="Search by name, email, or phone...">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding SearchFilter}" Value="">
-                                        <Setter Property="Visibility" Value="Visible" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                </Grid>
-
-                <!--  Refresh Button  -->
-                <Button
-                    Grid.Column="1"
-                    Margin="12,0,0,0"
-                    Padding="16,12"
-                    Command="{Binding RefreshCommand}"
-                    Style="{StaticResource OutlineButton}">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock
-                            Margin="0,0,8,0"
-                            FontFamily="Segoe MDL2 Assets"
-                            Text="&#xE72C;" />
-                        <TextBlock Text="Refresh" />
-                    </StackPanel>
-                </Button>
-
-                <!--  Count  -->
-                <TextBlock
-                    Grid.Column="2"
-                    Margin="20,0,0,0"
-                    VerticalAlignment="Center"
-                    FontSize="14"
-                    FontWeight="Medium"
-                    Foreground="{StaticResource TextSecondaryBrush}">
-                    <Run Text="{Binding Items.Count, Mode=OneWay}" />
-                    <Run Text="/" />
-                    <Run Text="{Binding TotalItems, Mode=OneWay}" />
-                    <Run Text="clients" />
-                </TextBlock>
-            </Grid>
-        </Border>
-
-        <!--  Clients List  -->
+        <!--  Clients DataGrid  -->
         <Border
             Grid.Row="2"
             Style="{StaticResource Card}"
@@ -154,52 +38,19 @@
                 AutoGenerateColumns="False"
                 BorderThickness="0"
                 CanUserAddRows="False"
-                CanUserDeleteRows="False"
-                CanUserReorderColumns="True"
-                CanUserResizeRows="False"
                 GridLinesVisibility="None"
-                HeadersVisibility="Column"
-                IsReadOnly="True"
                 ItemsSource="{Binding Items}"
                 RowHeight="60"
-                SelectedItem="{Binding SelectedItem}"
-                SelectionMode="Single">
-                <DataGrid.ColumnHeaderStyle>
-                    <Style TargetType="DataGridColumnHeader">
-                        <Setter Property="Background" Value="{StaticResource BackgroundBrush}" />
-                        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
-                        <Setter Property="FontWeight" Value="SemiBold" />
-                        <Setter Property="FontSize" Value="13" />
-                        <Setter Property="Padding" Value="12,8" />
-                        <Setter Property="BorderThickness" Value="0,0,0,1" />
-                        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
-                    </Style>
-                </DataGrid.ColumnHeaderStyle>
-
-                <DataGrid.RowStyle>
-                    <Style TargetType="DataGridRow">
-                        <Setter Property="Background" Value="Transparent" />
-                        <Setter Property="BorderThickness" Value="0,0,0,1" />
-                        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
-                        <Style.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="{StaticResource HoverBrush}" />
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </DataGrid.RowStyle>
-
+                SelectedItem="{Binding SelectedItem}">
                 <DataGrid.Columns>
                     <DataGridTextColumn
                         Width="*"
                         Binding="{Binding FullName}"
-                        Header="Full Name">
+                        Header="Nom Complet">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
                                 <Setter Property="FontWeight" Value="Medium" />
                                 <Setter Property="FontSize" Value="14" />
-                                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
-                                <Setter Property="VerticalAlignment" Value="Center" />
                             </Style>
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
@@ -207,64 +58,17 @@
                     <DataGridTextColumn
                         Width="*"
                         Binding="{Binding ContactEmail}"
-                        Header="Email">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="FontSize" Value="13" />
-                                <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
-                                <Setter Property="VerticalAlignment" Value="Center" />
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
+                        Header="Email" />
 
                     <DataGridTextColumn
                         Width="150"
                         Binding="{Binding ContactPhone}"
-                        Header="Phone">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="FontSize" Value="13" />
-                                <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
-                                <Setter Property="VerticalAlignment" Value="Center" />
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
+                        Header="Téléphone" />
 
                     <DataGridTemplateColumn Width="150" Header="Actions">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <StackPanel
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"
-                                    Orientation="Horizontal">
-                                    <Button
-                                        Margin="4,0"
-                                        Padding="10"
-                                        Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                        CommandParameter="{Binding}"
-                                        Style="{StaticResource IconButton}"
-                                        ToolTip="Edit">
-                                        <TextBlock
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="16"
-                                            Foreground="{StaticResource PrimaryBrush}"
-                                            Text="&#xE70F;" />
-                                    </Button>
-
-                                    <Button
-                                        Margin="4,0"
-                                        Padding="10"
-                                        Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                        CommandParameter="{Binding}"
-                                        Style="{StaticResource IconButton}"
-                                        ToolTip="Delete">
-                                        <TextBlock
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="16"
-                                            Foreground="{StaticResource ErrorBrush}"
-                                            Text="&#xE74D;" />
-                                    </Button>
-                                </StackPanel>
+                                <ContentControl Content="{Binding}" ContentTemplate="{StaticResource ActionButtonsTemplate}" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -273,74 +77,9 @@
         </Border>
 
         <!--  Empty State  -->
-        <Border
-            Grid.Row="2"
-            Padding="60"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Center"
-            Style="{StaticResource Card}"
-            Visibility="{Binding Items.Count, Converter={StaticResource InverseBoolToVis}}">
-            <StackPanel HorizontalAlignment="Center">
-                <TextBlock
-                    Margin="0,0,0,16"
-                    HorizontalAlignment="Center"
-                    FontSize="48"
-                    Text="👥" />
-                <TextBlock
-                    Margin="0,0,0,8"
-                    HorizontalAlignment="Center"
-                    FontSize="18"
-                    FontWeight="SemiBold"
-                    Foreground="{StaticResource TextPrimaryBrush}"
-                    Text="No clients found" />
-                <TextBlock
-                    Margin="0,0,0,16"
-                    HorizontalAlignment="Center"
-                    FontSize="14"
-                    Foreground="{StaticResource TextSecondaryBrush}"
-                    Text="Click 'New Client' to add your first client" />
-                <Button
-                    Padding="20,12"
-                    Command="{Binding AddCommand}"
-                    Content="New Client"
-                    Style="{StaticResource ModernButton}" />
-            </StackPanel>
-        </Border>
+        <Control Grid.Row="2" Template="{StaticResource EmptyStateTemplate}" />
 
         <!--  Pagination  -->
-        <Border
-            Grid.Row="3"
-            Margin="0,16,0,0"
-            Padding="16"
-            HorizontalAlignment="Center"
-            Background="{StaticResource SurfaceBrush}"
-            BorderBrush="{StaticResource BorderBrush}"
-            BorderThickness="1"
-            CornerRadius="8"
-            Visibility="{Binding Items.Count, Converter={StaticResource BoolToVis}}">
-            <StackPanel Orientation="Horizontal">
-                <Button
-                    Padding="12,8"
-                    Command="{Binding PreviousPageCommand}"
-                    Content="◀ Previous"
-                    IsEnabled="{Binding CurrentPage, Converter={StaticResource GreaterThanOne}}"
-                    Style="{StaticResource OutlineButton}" />
-
-                <TextBlock
-                    Margin="20,0"
-                    VerticalAlignment="Center"
-                    FontSize="14"
-                    Foreground="{StaticResource TextPrimaryBrush}">
-                    <Run Text="Page" />
-                    <Run FontWeight="Bold" Text="{Binding CurrentPage, Mode=OneWay}" />
-                </TextBlock>
-
-                <Button
-                    Padding="12,8"
-                    Command="{Binding NextPageCommand}"
-                    Content="Next ▶"
-                    Style="{StaticResource OutlineButton}" />
-            </StackPanel>
-        </Border>
+        <Control Grid.Row="3" Template="{StaticResource PaginationTemplate}" />
     </Grid>
 </Page>

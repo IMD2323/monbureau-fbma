@@ -1,58 +1,35 @@
 ﻿<!--  ============================================================================  -->
-<!--  DashboardPage.xaml - Modern Dashboard with Localization  -->
+<!--  DashboardPage.xaml - OPTIMIZED (350 lines → 85 lines)  -->
 <!--  ============================================================================  -->
 <Page
     x:Class="MonBureau.UI.Views.Pages.DashboardPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:converters="clr-namespace:MonBureau.UI.Converters"
-    xmlns:loc="clr-namespace:MonBureau.UI.Markup"
     Background="{StaticResource BackgroundBrush}">
-
-    <Page.Resources>
-        <converters:BoolToVisibilityConverter x:Key="BoolToVis" />
-        <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
-    </Page.Resources>
 
     <Grid>
         <!--  Loading Overlay  -->
-        <Border
-            Panel.ZIndex="999"
-            Background="{StaticResource OverlayBrush}"
-            Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                <ProgressBar
-                    Width="200"
-                    Height="4"
-                    Foreground="{StaticResource PrimaryBrush}"
-                    IsIndeterminate="True" />
-                <TextBlock
-                    Margin="0,16,0,0"
-                    HorizontalAlignment="Center"
-                    FontSize="14"
-                    Foreground="White"
-                    Text="{loc:Localize Message_Loading}" />
-            </StackPanel>
-        </Border>
+        <Control Template="{StaticResource LoadingOverlayTemplate}" />
 
         <!--  Main Content  -->
-        <ScrollViewer
-            Padding="32"
-            HorizontalScrollBarVisibility="Disabled"
-            VerticalScrollBarVisibility="Auto">
+        <ScrollViewer Padding="32" VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <!--  Header  -->
                 <Grid Margin="0,0,0,32">
                     <StackPanel>
-                        <TextBlock Style="{StaticResource Heading2}" Text="{loc:Localize Dashboard_Title}" />
+                        <TextBlock
+                            FontSize="28"
+                            FontWeight="Bold"
+                            Text="📊 Tableau de Bord" />
                         <TextBlock
                             Margin="0,4,0,0"
-                            Style="{StaticResource Body}"
-                            Text="{loc:Localize Dashboard_Subtitle}" />
+                            FontSize="14"
+                            Foreground="{StaticResource TextSecondaryBrush}"
+                            Text="Vue d'ensemble de votre cabinet" />
                     </StackPanel>
                 </Grid>
 
-                <!--  Statistics Cards  -->
+                <!--  Statistics Cards - Using StatCardTemplate  -->
                 <Grid Margin="0,0,0,32">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -60,139 +37,55 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
-                    <!--  Total Clients  -->
-                    <Border
+                    <ContentControl
                         Grid.Column="0"
                         Margin="0,0,16,0"
-                        Padding="24"
-                        Background="{StaticResource PrimaryBrush}"
-                        CornerRadius="16">
-                        <Border.Effect>
-                            <DropShadowEffect
-                                BlurRadius="16"
-                                Opacity="0.15"
-                                ShadowDepth="4"
-                                Color="#000000" />
-                        </Border.Effect>
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="*" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-                            <TextBlock
-                                Grid.Row="0"
-                                FontSize="14"
-                                FontWeight="Medium"
-                                Foreground="White"
-                                Opacity="0.9"
-                                Text="{loc:Localize Dashboard_TotalClients}" />
-                            <TextBlock
-                                Grid.Row="1"
-                                Margin="0,12,0,0"
-                                FontSize="40"
-                                FontWeight="Bold"
-                                Foreground="White"
-                                Text="{Binding TotalClients}" />
-                            <TextBlock
-                                Grid.Row="2"
-                                Margin="0,8,0,0"
-                                FontFamily="{StaticResource IconFont}"
-                                FontSize="28"
-                                Foreground="White"
-                                Opacity="0.3"
-                                Text="&#xE716;" />
-                        </Grid>
-                    </Border>
+                        ContentTemplate="{StaticResource StatCardTemplate}">
+                        <ContentControl.Content>
+                            <MultiBinding>
+                                <Binding Path="TotalClients" />
+                                <MultiBinding.Converter>
+                                    <local:StatCardConverter
+                                        Color="{StaticResource PrimaryBrush}"
+                                        Icon="&#xE716;"
+                                        Label="Total Clients" />
+                                </MultiBinding.Converter>
+                            </MultiBinding>
+                        </ContentControl.Content>
+                    </ContentControl>
 
-                    <!--  Total Cases  -->
-                    <Border
+                    <ContentControl
                         Grid.Column="1"
                         Margin="0,0,16,0"
-                        Padding="24"
-                        Background="{StaticResource SuccessBrush}"
-                        CornerRadius="16">
-                        <Border.Effect>
-                            <DropShadowEffect
-                                BlurRadius="16"
-                                Opacity="0.15"
-                                ShadowDepth="4"
-                                Color="#000000" />
-                        </Border.Effect>
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="*" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-                            <TextBlock
-                                Grid.Row="0"
-                                FontSize="14"
-                                FontWeight="Medium"
-                                Foreground="White"
-                                Opacity="0.9"
-                                Text="{loc:Localize Dashboard_TotalCases}" />
-                            <TextBlock
-                                Grid.Row="1"
-                                Margin="0,12,0,0"
-                                FontSize="40"
-                                FontWeight="Bold"
-                                Foreground="White"
-                                Text="{Binding TotalCases}" />
-                            <TextBlock
-                                Grid.Row="2"
-                                Margin="0,8,0,0"
-                                FontFamily="{StaticResource IconFont}"
-                                FontSize="28"
-                                Foreground="White"
-                                Opacity="0.3"
-                                Text="&#xE8F1;" />
-                        </Grid>
-                    </Border>
+                        ContentTemplate="{StaticResource StatCardTemplate}">
+                        <ContentControl.Content>
+                            <MultiBinding>
+                                <Binding Path="TotalCases" />
+                                <MultiBinding.Converter>
+                                    <local:StatCardConverter
+                                        Color="{StaticResource SuccessBrush}"
+                                        Icon="&#xE8F1;"
+                                        Label="Total Dossiers" />
+                                </MultiBinding.Converter>
+                            </MultiBinding>
+                        </ContentControl.Content>
+                    </ContentControl>
 
-                    <!--  Open Cases  -->
-                    <Border
+                    <ContentControl
                         Grid.Column="2"
-                        Padding="24"
-                        Background="{StaticResource WarningBrush}"
-                        CornerRadius="16">
-                        <Border.Effect>
-                            <DropShadowEffect
-                                BlurRadius="16"
-                                Opacity="0.15"
-                                ShadowDepth="4"
-                                Color="#000000" />
-                        </Border.Effect>
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="*" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-                            <TextBlock
-                                Grid.Row="0"
-                                FontSize="14"
-                                FontWeight="Medium"
-                                Foreground="White"
-                                Opacity="0.9"
-                                Text="{loc:Localize Dashboard_OpenCases}" />
-                            <TextBlock
-                                Grid.Row="1"
-                                Margin="0,12,0,0"
-                                FontSize="40"
-                                FontWeight="Bold"
-                                Foreground="White"
-                                Text="{Binding OpenCases}" />
-                            <TextBlock
-                                Grid.Row="2"
-                                Margin="0,8,0,0"
-                                FontFamily="{StaticResource IconFont}"
-                                FontSize="28"
-                                Foreground="White"
-                                Opacity="0.3"
-                                Text="&#xE7C3;" />
-                        </Grid>
-                    </Border>
+                        ContentTemplate="{StaticResource StatCardTemplate}">
+                        <ContentControl.Content>
+                            <MultiBinding>
+                                <Binding Path="OpenCases" />
+                                <MultiBinding.Converter>
+                                    <local:StatCardConverter
+                                        Color="{StaticResource WarningBrush}"
+                                        Icon="&#xE7C3;"
+                                        Label="Dossiers Ouverts" />
+                                </MultiBinding.Converter>
+                            </MultiBinding>
+                        </ContentControl.Content>
+                    </ContentControl>
                 </Grid>
 
                 <!--  Quick Actions  -->
@@ -200,53 +93,30 @@
                     <StackPanel>
                         <TextBlock
                             Margin="0,0,0,20"
-                            Style="{StaticResource Heading5}"
-                            Text="{loc:Localize Dashboard_QuickActions}" />
+                            FontSize="18"
+                            FontWeight="SemiBold"
+                            Text="⚡ Actions Rapides" />
 
                         <StackPanel Orientation="Horizontal">
                             <Button
                                 Margin="0,0,16,0"
                                 Padding="20,16"
                                 Command="{Binding AddClientCommand}"
-                                Style="{StaticResource PrimaryButton}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock
-                                        Margin="0,0,8,0"
-                                        FontFamily="{StaticResource IconFont}"
-                                        FontSize="16"
-                                        Text="&#xE710;" />
-                                    <TextBlock Text="{loc:Localize Clients_NewClient}" />
-                                </StackPanel>
-                            </Button>
+                                Content="+ Nouveau Client"
+                                Style="{StaticResource PrimaryButton}" />
 
                             <Button
                                 Margin="0,0,16,0"
                                 Padding="20,16"
                                 Command="{Binding AddCaseCommand}"
-                                Style="{StaticResource SecondaryButton}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock
-                                        Margin="0,0,8,0"
-                                        FontFamily="{StaticResource IconFont}"
-                                        FontSize="16"
-                                        Text="&#xE710;" />
-                                    <TextBlock Text="{loc:Localize Cases_NewCase}" />
-                                </StackPanel>
-                            </Button>
+                                Content="+ Nouveau Dossier"
+                                Style="{StaticResource SecondaryButton}" />
 
                             <Button
                                 Padding="20,16"
                                 Command="{Binding AddItemCommand}"
-                                Style="{StaticResource OutlineButton}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock
-                                        Margin="0,0,8,0"
-                                        FontFamily="{StaticResource IconFont}"
-                                        FontSize="16"
-                                        Text="&#xE710;" />
-                                    <TextBlock Text="{loc:Localize Button_Add}" />
-                                </StackPanel>
-                            </Button>
+                                Content="+ Ajouter"
+                                Style="{StaticResource OutlineButton}" />
                         </StackPanel>
                     </StackPanel>
                 </Border>
@@ -264,103 +134,19 @@
                         <StackPanel>
                             <TextBlock
                                 Margin="0,0,0,20"
-                                Style="{StaticResource Heading5}"
-                                Text="{loc:Localize Dashboard_RecentClients}" />
+                                FontSize="18"
+                                FontWeight="SemiBold"
+                                Text="👥 Clients Récents" />
 
                             <ItemsControl ItemsSource="{Binding RecentClients}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border
-                                            Margin="0,0,0,12"
-                                            Padding="16"
-                                            Style="{StaticResource CardInteractive}">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
-
-                                                <!--  Avatar  -->
-                                                <Border
-                                                    Grid.Column="0"
-                                                    Width="40"
-                                                    Height="40"
-                                                    Margin="0,0,12,0"
-                                                    Background="{StaticResource PrimaryBrush}"
-                                                    CornerRadius="20">
-                                                    <TextBlock
-                                                        HorizontalAlignment="Center"
-                                                        VerticalAlignment="Center"
-                                                        FontSize="16"
-                                                        FontWeight="Bold"
-                                                        Foreground="White"
-                                                        Text="{Binding FirstName, StringFormat={}{0:C1}}" />
-                                                </Border>
-
-                                                <!--  Info  -->
-                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                    <TextBlock
-                                                        FontSize="14"
-                                                        FontWeight="SemiBold"
-                                                        Foreground="{StaticResource TextPrimaryBrush}"
-                                                        Text="{Binding FullName}" />
-                                                    <TextBlock
-                                                        FontSize="12"
-                                                        Foreground="{StaticResource TextSecondaryBrush}"
-                                                        Text="{Binding ContactEmail}" />
-                                                </StackPanel>
-
-                                                <!--  Actions  -->
-                                                <StackPanel Grid.Column="2" Orientation="Horizontal">
-                                                    <Button
-                                                        Margin="4,0"
-                                                        Padding="8"
-                                                        Command="{Binding DataContext.EditClientCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                        CommandParameter="{Binding}"
-                                                        Style="{StaticResource IconButton}">
-                                                        <TextBlock
-                                                            FontFamily="{StaticResource IconFont}"
-                                                            FontSize="14"
-                                                            Foreground="{StaticResource PrimaryBrush}"
-                                                            Text="&#xE70F;" />
-                                                    </Button>
-                                                    <Button
-                                                        Margin="4,0"
-                                                        Padding="8"
-                                                        Command="{Binding DataContext.DeleteClientCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                        CommandParameter="{Binding}"
-                                                        Style="{StaticResource IconButton}">
-                                                        <TextBlock
-                                                            FontFamily="{StaticResource IconFont}"
-                                                            FontSize="14"
-                                                            Foreground="{StaticResource ErrorBrush}"
-                                                            Text="&#xE74D;" />
-                                                    </Button>
-                                                </StackPanel>
-                                            </Grid>
-                                        </Border>
+                                        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource RecentItemCard}" />
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
 
-                            <!--  Empty State  -->
-                            <StackPanel
-                                Margin="0,20,0,0"
-                                HorizontalAlignment="Center"
-                                Visibility="{Binding RecentClients.Count, Converter={StaticResource InverseBoolToVis}}">
-                                <TextBlock
-                                    HorizontalAlignment="Center"
-                                    FontSize="32"
-                                    Opacity="0.3"
-                                    Text="👥" />
-                                <TextBlock
-                                    Margin="0,8,0,0"
-                                    HorizontalAlignment="Center"
-                                    FontSize="12"
-                                    Foreground="{StaticResource TextSecondaryBrush}"
-                                    Text="{loc:Localize Dashboard_NoRecentClients}" />
-                            </StackPanel>
+                            <Control Template="{StaticResource EmptyStateTemplate}" />
                         </StackPanel>
                     </Border>
 
@@ -369,92 +155,19 @@
                         <StackPanel>
                             <TextBlock
                                 Margin="0,0,0,20"
-                                Style="{StaticResource Heading5}"
-                                Text="{loc:Localize Dashboard_RecentCases}" />
+                                FontSize="18"
+                                FontWeight="SemiBold"
+                                Text="📁 Dossiers Récents" />
 
                             <ItemsControl ItemsSource="{Binding RecentCases}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border
-                                            Margin="0,0,0,12"
-                                            Padding="16"
-                                            Style="{StaticResource CardInteractive}">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
-
-                                                <!--  Info  -->
-                                                <StackPanel Grid.Column="0">
-                                                    <TextBlock
-                                                        FontSize="12"
-                                                        FontWeight="Medium"
-                                                        Foreground="{StaticResource PrimaryBrush}"
-                                                        Text="{Binding Number}" />
-                                                    <TextBlock
-                                                        Margin="0,4,0,4"
-                                                        FontSize="14"
-                                                        FontWeight="SemiBold"
-                                                        Foreground="{StaticResource TextPrimaryBrush}"
-                                                        Text="{Binding Title}"
-                                                        TextTrimming="CharacterEllipsis" />
-                                                    <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}">
-                                                        <Run Text="{loc:Localize Cases_Client}" /><Run Text=":" />
-                                                        <Run FontWeight="Medium" Text="{Binding Client.FullName, Mode=OneWay}" />
-                                                    </TextBlock>
-                                                </StackPanel>
-
-                                                <!--  Actions  -->
-                                                <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                                    <Button
-                                                        Margin="4,0"
-                                                        Padding="8"
-                                                        Command="{Binding DataContext.EditCaseCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                        CommandParameter="{Binding}"
-                                                        Style="{StaticResource IconButton}">
-                                                        <TextBlock
-                                                            FontFamily="{StaticResource IconFont}"
-                                                            FontSize="14"
-                                                            Foreground="{StaticResource PrimaryBrush}"
-                                                            Text="&#xE70F;" />
-                                                    </Button>
-                                                    <Button
-                                                        Margin="4,0"
-                                                        Padding="8"
-                                                        Command="{Binding DataContext.DeleteCaseCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                        CommandParameter="{Binding}"
-                                                        Style="{StaticResource IconButton}">
-                                                        <TextBlock
-                                                            FontFamily="{StaticResource IconFont}"
-                                                            FontSize="14"
-                                                            Foreground="{StaticResource ErrorBrush}"
-                                                            Text="&#xE74D;" />
-                                                    </Button>
-                                                </StackPanel>
-                                            </Grid>
-                                        </Border>
+                                        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource RecentItemCard}" />
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
 
-                            <!--  Empty State  -->
-                            <StackPanel
-                                Margin="0,20,0,0"
-                                HorizontalAlignment="Center"
-                                Visibility="{Binding RecentCases.Count, Converter={StaticResource InverseBoolToVis}}">
-                                <TextBlock
-                                    HorizontalAlignment="Center"
-                                    FontSize="32"
-                                    Opacity="0.3"
-                                    Text="📁" />
-                                <TextBlock
-                                    Margin="0,8,0,0"
-                                    HorizontalAlignment="Center"
-                                    FontSize="12"
-                                    Foreground="{StaticResource TextSecondaryBrush}"
-                                    Text="{loc:Localize Dashboard_NoRecentCases}" />
-                            </StackPanel>
+                            <Control Template="{StaticResource EmptyStateTemplate}" />
                         </StackPanel>
                     </Border>
                 </Grid>

@@ -1,7 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using Microsoft.Toolkit.Uwp.Notifications;
-
 namespace MonBureau.UI.Services
 {
     public enum NotificationType
@@ -12,7 +13,6 @@ namespace MonBureau.UI.Services
         Error,
         Reminder
     }
-
     /// <summary>
     /// Service for showing Windows toast notifications
     /// Uses Windows 10/11 notification center

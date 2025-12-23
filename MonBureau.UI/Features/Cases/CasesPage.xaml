@@ -1,7 +1,4 @@
-﻿<!--  ============================================================================  -->
-<!--  CasesPage.xaml - OPTIMIZED (150 lines → 45 lines)  -->
-<!--  ============================================================================  -->
-<Page
+﻿<Page
     x:Class="MonBureau.UI.Features.Cases.CasesPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -13,8 +10,11 @@
     </Page.Resources>
 
     <Grid>
-        <!--  Loading Overlay  -->
-        <Control Template="{StaticResource LoadingOverlayTemplate}" />
+        <!--  Loading Overlay - FIXED  -->
+        <ContentControl
+            Panel.ZIndex="999"
+            Content="{Binding}"
+            ContentTemplate="{StaticResource LoadingOverlayTemplate}" />
 
         <!--  Main Content  -->
         <ScrollViewer
@@ -22,11 +22,11 @@
             HorizontalScrollBarVisibility="Disabled"
             VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <!--  Page Header  -->
-                <Control Template="{StaticResource PageHeaderTemplate}" />
+                <!--  Page Header - FIXED  -->
+                <ContentControl Content="{Binding}" ContentTemplate="{StaticResource PageHeaderTemplate}" />
 
-                <!--  Search Bar  -->
-                <Control Template="{StaticResource SearchBarTemplate}" />
+                <!--  Search Bar - FIXED  -->
+                <ContentControl Content="{Binding}" ContentTemplate="{StaticResource SearchBarTemplate}" />
 
                 <!--  Cases List  -->
                 <ItemsControl ItemsSource="{Binding Items}">
@@ -35,8 +35,8 @@
                             <Border
                                 Margin="0,0,0,12"
                                 Padding="20"
-                                Background="{StaticResource SurfaceBrush}"
-                                BorderBrush="{StaticResource BorderBrush}"
+                                Background="White"
+                                BorderBrush="#E5E7EB"
                                 BorderThickness="1"
                                 CornerRadius="12"
                                 Cursor="Hand">
@@ -61,7 +61,7 @@
                                             VerticalAlignment="Center"
                                             FontFamily="Segoe MDL2 Assets"
                                             FontSize="28"
-                                            Foreground="{StaticResource PrimaryBrush}"
+                                            Foreground="#2563EB"
                                             Text="&#xE8F1;" />
                                     </Border>
 
@@ -70,7 +70,7 @@
                                         <TextBlock
                                             FontSize="12"
                                             FontWeight="Medium"
-                                            Foreground="{StaticResource PrimaryBrush}"
+                                            Foreground="#2563EB"
                                             Text="{Binding Number}" />
                                         <TextBlock
                                             Margin="0,4,0,4"
@@ -78,14 +78,14 @@
                                             FontWeight="SemiBold"
                                             Text="{Binding Title}" />
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock FontSize="13" Foreground="{StaticResource TextSecondaryBrush}">
+                                            <TextBlock FontSize="13" Foreground="#6B7280">
                                                 <Run Text="Client:" />
                                                 <Run FontWeight="Medium" Text="{Binding Client.FullName, Mode=OneWay}" />
                                             </TextBlock>
                                             <TextBlock
                                                 Margin="16,0,0,0"
                                                 FontSize="12"
-                                                Foreground="{StaticResource TextTertiaryBrush}"
+                                                Foreground="#9CA3AF"
                                                 Text="{Binding OpeningDate, StringFormat='dd/MM/yyyy'}" />
                                         </StackPanel>
                                     </StackPanel>
@@ -101,7 +101,7 @@
                                         <TextBlock
                                             FontSize="12"
                                             FontWeight="Medium"
-                                            Foreground="{StaticResource PrimaryBrush}"
+                                            Foreground="#2563EB"
                                             Text="{Binding Status, Converter={StaticResource StatusToString}}" />
                                     </Border>
 
@@ -116,11 +116,11 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
 
-                <!--  Pagination  -->
-                <Control Template="{StaticResource PaginationTemplate}" />
+                <!--  Pagination - FIXED  -->
+                <ContentControl Content="{Binding}" ContentTemplate="{StaticResource PaginationTemplate}" />
 
-                <!--  Empty State  -->
-                <Control Template="{StaticResource EmptyStateTemplate}" />
+                <!--  Empty State - FIXED  -->
+                <ContentControl Content="{Binding}" ContentTemplate="{StaticResource EmptyStateTemplate}" />
             </StackPanel>
         </ScrollViewer>
     </Grid>

@@ -1,15 +1,15 @@
-﻿<!--  ============================================================================  -->
-<!--  ExpensesPage.xaml - FIXED (removed local: namespace references)  -->
-<!--  ============================================================================  -->
-<Page
+﻿<Page
     x:Class="MonBureau.UI.Views.Pages.ExpensesPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Background="{StaticResource BackgroundBrush}">
 
     <Grid>
-        <!--  Loading Overlay  -->
-        <Control Template="{StaticResource LoadingOverlayTemplate}" />
+        <!--  Loading Overlay - FIXED  -->
+        <ContentControl
+            Panel.ZIndex="999"
+            Content="{Binding}"
+            ContentTemplate="{StaticResource LoadingOverlayTemplate}" />
 
         <!--  Main Content  -->
         <ScrollViewer Padding="30" VerticalScrollBarVisibility="Auto">
@@ -23,7 +23,7 @@
                             Text="💰 Dépenses" />
                         <TextBlock
                             FontSize="14"
-                            Foreground="{StaticResource TextSecondaryBrush}"
+                            Foreground="#6B7280"
                             Text="Suivi des dépenses par dossier" />
                     </StackPanel>
 
@@ -35,7 +35,7 @@
                         Style="{StaticResource PrimaryButton}" />
                 </Grid>
 
-                <!--  Statistics Cards (Simple version without converter)  -->
+                <!--  Statistics Cards  -->
                 <Grid Margin="0,0,0,24">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -48,7 +48,11 @@
                     </Grid.ColumnDefinitions>
 
                     <!--  Total Expenses  -->
-                    <Border Grid.Column="0" Style="{StaticResource StatCard}">
+                    <Border
+                        Grid.Column="0"
+                        Padding="24"
+                        Background="#2563EB"
+                        CornerRadius="16">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
@@ -83,8 +87,9 @@
                     <!--  Paid  -->
                     <Border
                         Grid.Column="2"
-                        Background="{StaticResource SuccessBrush}"
-                        Style="{StaticResource StatCard}">
+                        Padding="24"
+                        Background="#10B981"
+                        CornerRadius="16">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
@@ -118,8 +123,9 @@
                     <!--  Unpaid  -->
                     <Border
                         Grid.Column="4"
-                        Background="{StaticResource WarningBrush}"
-                        Style="{StaticResource StatCard}">
+                        Padding="24"
+                        Background="#F59E0B"
+                        CornerRadius="16">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
@@ -153,8 +159,9 @@
                     <!--  Count  -->
                     <Border
                         Grid.Column="6"
-                        Background="{StaticResource SecondaryBrush}"
-                        Style="{StaticResource StatCard}">
+                        Padding="24"
+                        Background="#8B5CF6"
+                        CornerRadius="16">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
@@ -187,19 +194,22 @@
                     </Border>
                 </Grid>
 
-                <!--  Search Bar  -->
-                <Control Template="{StaticResource SearchBarTemplate}" />
+                <!--  Search Bar - FIXED  -->
+                <ContentControl Content="{Binding}" ContentTemplate="{StaticResource SearchBarTemplate}" />
 
                 <!--  Expenses List  -->
-                <Border Style="{StaticResource Card}">
+                <Border
+                    Padding="24"
+                    Background="White"
+                    CornerRadius="12">
                     <ItemsControl ItemsSource="{Binding Items}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Border
                                     Margin="0,0,0,12"
                                     Padding="20"
-                                    Background="{StaticResource BackgroundBrush}"
-                                    BorderBrush="{StaticResource BorderBrush}"
+                                    Background="#F9FAFB"
+                                    BorderBrush="#E5E7EB"
                                     BorderThickness="1"
                                     CornerRadius="8">
                                     <Grid>
@@ -224,7 +234,7 @@
                                                 FontSize="15"
                                                 FontWeight="SemiBold"
                                                 Text="{Binding Description}" />
-                                            <TextBlock FontSize="13" Foreground="{StaticResource TextSecondaryBrush}">
+                                            <TextBlock FontSize="13" Foreground="#6B7280">
                                                 <Run Text="Dossier:" />
                                                 <Run FontWeight="Medium" Text="{Binding Case.Number, Mode=OneWay}" />
                                                 <Run Text="•" />
@@ -239,7 +249,7 @@
                                             VerticalAlignment="Center"
                                             FontSize="18"
                                             FontWeight="Bold"
-                                            Foreground="{StaticResource PrimaryBrush}"
+                                            Foreground="#2563EB"
                                             Text="{Binding Amount, StringFormat='{}{0:N2} DA'}" />
 
                                         <!--  Status Badge  -->
@@ -251,10 +261,10 @@
                                             CornerRadius="6">
                                             <Border.Style>
                                                 <Style TargetType="Border">
-                                                    <Setter Property="Background" Value="{StaticResource WarningSubtleBrush}" />
+                                                    <Setter Property="Background" Value="#FEF3C7" />
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding IsPaid}" Value="True">
-                                                            <Setter Property="Background" Value="{StaticResource SuccessSubtleBrush}" />
+                                                            <Setter Property="Background" Value="#D1FAE5" />
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
@@ -263,11 +273,11 @@
                                                 <TextBlock.Style>
                                                     <Style TargetType="TextBlock">
                                                         <Setter Property="Text" Value="⏳ En Attente" />
-                                                        <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
+                                                        <Setter Property="Foreground" Value="#F59E0B" />
                                                         <Style.Triggers>
                                                             <DataTrigger Binding="{Binding IsPaid}" Value="True">
                                                                 <Setter Property="Text" Value="✓ Payée" />
-                                                                <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
+                                                                <Setter Property="Foreground" Value="#10B981" />
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
@@ -287,11 +297,11 @@
                     </ItemsControl>
                 </Border>
 
-                <!--  Pagination  -->
-                <Control Template="{StaticResource PaginationTemplate}" />
+                <!--  Pagination - FIXED  -->
+                <ContentControl Content="{Binding}" ContentTemplate="{StaticResource PaginationTemplate}" />
 
-                <!--  Empty State  -->
-                <Control Template="{StaticResource EmptyStateTemplate}" />
+                <!--  Empty State - FIXED  -->
+                <ContentControl Content="{Binding}" ContentTemplate="{StaticResource EmptyStateTemplate}" />
             </StackPanel>
         </ScrollViewer>
     </Grid>

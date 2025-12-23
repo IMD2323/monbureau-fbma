@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
-using Microsoft.Toolkit.Uwp.Notifications;
+
 namespace MonBureau.UI.Services
 {
     public enum NotificationType
@@ -13,72 +13,51 @@ namespace MonBureau.UI.Services
         Error,
         Reminder
     }
+
     /// <summary>
-    /// Service for showing Windows toast notifications
-    /// Uses Windows 10/11 notification center
+    /// FIXED: Fallback notification service using MessageBox
+    /// Windows Toast Notifications require Windows 10/11 and proper UWP registration
+    /// This version works on all Windows versions
     /// </summary>
     public class NotificationService
     {
-        private const string APP_ID = "MonBureau.LawOffice";
+        private readonly Queue<NotificationMessage> _notificationQueue = new();
+        private const int MAX_QUEUE_SIZE = 10;
 
-        public NotificationService()
-        {
-            try
-            {
-                // Register app for notifications
-                ToastNotificationManagerCompat.OnActivated += OnNotificationActivated;
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[NotificationService] Initialization error: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Shows a Windows toast notification
-        /// </summary>
         public void ShowNotification(string title, string message, NotificationType type = NotificationType.Info)
         {
             try
             {
-                var builder = new ToastContentBuilder()
-                    .AddText(title, hintMaxLines: 1)
-                    .AddText(message)
-                    .SetToastDuration(ToastDuration.Long);
+                System.Diagnostics.Debug.WriteLine($"[NotificationService] Showing notification: {title}");
 
-                // Add icon based on type
-                var iconPath = GetIconPath(type);
-                if (!string.IsNullOrEmpty(iconPath))
+                // Add to queue for history
+                _notificationQueue.Enqueue(new NotificationMessage
                 {
-                    builder.AddAppLogoOverride(new Uri(iconPath), ToastGenericAppLogoCrop.Circle);
+                    Title = title,
+                    Message = message,
+                    Type = type,
+                    Timestamp = DateTime.Now
+                });
+
+                // Keep queue size manageable
+                while (_notificationQueue.Count > MAX_QUEUE_SIZE)
+                {
+                    _notificationQueue.Dequeue();
                 }
 
-                // Add audio for reminders
-                if (type == NotificationType.Reminder)
+                // Show notification on UI thread
+                Application.Current.Dispatcher.Invoke(() =>
                 {
-                    builder.AddAudio(new Uri("ms-winsoundevent:Notification.Reminder"));
-                }
-
-                // Show notification
-                builder.Show();
-
-                System.Diagnostics.Debug.WriteLine($"[NotificationService] Notification shown: {title}");
+                    var icon = GetMessageBoxImage(type);
+                    MessageBox.Show(message, title, MessageBoxButton.OK, icon);
+                });
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[NotificationService] Error showing notification: {ex.Message}");
-
-                // Fallback to MessageBox
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    MessageBox.Show(message, title, MessageBoxButton.OK, GetMessageBoxImage(type));
-                });
+                System.Diagnostics.Debug.WriteLine($"[NotificationService] Error: {ex.Message}");
             }
         }
 
-        /// <summary>
-        /// Shows a notification with action buttons
-        /// </summary>
         public void ShowNotificationWithActions(
             string title,
             string message,
@@ -88,35 +67,27 @@ namespace MonBureau.UI.Services
         {
             try
             {
-                var builder = new ToastContentBuilder()
-                    .AddText(title, hintMaxLines: 1)
-                    .AddText(message)
-                    .AddButton(new ToastButton()
-                        .SetContent(actionText)
-                        .AddArgument("action", "clicked"))
-                    .AddButton(new ToastButtonDismiss("Fermer"))
-                    .SetToastDuration(ToastDuration.Long);
-
-                var iconPath = GetIconPath(type);
-                if (!string.IsNullOrEmpty(iconPath))
+                Application.Current.Dispatcher.Invoke(() =>
                 {
-                    builder.AddAppLogoOverride(new Uri(iconPath), ToastGenericAppLogoCrop.Circle);
-                }
+                    var result = MessageBox.Show(
+                        $"{message}\n\nVoulez-vous {actionText.ToLower()}?",
+                        title,
+                        MessageBoxButton.YesNo,
+                        GetMessageBoxImage(type)
+                    );
 
-                builder.Show();
-
-                // Store action for later execution
-                _pendingActions[title] = onActionClicked;
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        onActionClicked?.Invoke();
+                    }
+                });
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[NotificationService] Error showing action notification: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[NotificationService] Error: {ex.Message}");
             }
         }
 
-        /// <summary>
-        /// Shows appointment reminder notification
-        /// </summary>
         public void ShowAppointmentReminder(string title, DateTime startTime, string location)
         {
             try
@@ -126,88 +97,26 @@ namespace MonBureau.UI.Services
                     ? $"Dans {timeUntil.TotalMinutes:F0} minutes"
                     : $"Dans {timeUntil.TotalHours:F1} heures";
 
-                var builder = new ToastContentBuilder()
-                    .AddText("🔔 Rappel de Rendez-vous")
-                    .AddText(title, hintMaxLines: 1)
-                    .AddText($"⏰ {startTime:HH:mm} - {timeText}")
-                    .AddText($"📍 {location}")
-                    .AddButton(new ToastButton()
-                        .SetContent("Voir détails")
-                        .AddArgument("action", "view_appointment")
-                        .AddArgument("appointmentId", title))
-                    .AddButton(new ToastButtonSnooze("Rappeler plus tard"))
-                    .AddButton(new ToastButtonDismiss("Fermer"))
-                    .SetToastScenario(ToastScenario.Reminder)
-                    .AddAudio(new Uri("ms-winsoundevent:Notification.Reminder"));
+                var message = $"📅 {title}\n⏰ {startTime:HH:mm} - {timeText}\n📍 {location}";
 
-                builder.Show();
+                ShowNotification("🔔 Rappel de Rendez-vous", message, NotificationType.Reminder);
 
                 System.Diagnostics.Debug.WriteLine($"[NotificationService] Appointment reminder shown: {title}");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[NotificationService] Error showing appointment reminder: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[NotificationService] Error: {ex.Message}");
             }
         }
 
-        /// <summary>
-        /// Clears all notifications
-        /// </summary>
         public void ClearAllNotifications()
         {
-            try
-            {
-                ToastNotificationManagerCompat.History.Clear();
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[NotificationService] Error clearing notifications: {ex.Message}");
-            }
+            _notificationQueue.Clear();
         }
 
-        private void OnNotificationActivated(ToastNotificationActivatedEventArgsCompat e)
+        public IEnumerable<NotificationMessage> GetRecentNotifications()
         {
-            try
-            {
-                var args = ToastArguments.Parse(e.Argument);
-
-                if (args.Contains("action"))
-                {
-                    var action = args["action"];
-
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        if (action == "clicked" && _pendingActions.Count > 0)
-                        {
-                            // Execute pending action
-                            var firstAction = _pendingActions.Values.FirstOrDefault();
-                            firstAction?.Invoke();
-                            _pendingActions.Clear();
-                        }
-                        else if (action == "view_appointment")
-                        {
-                            // Navigate to appointments page
-                            System.Diagnostics.Debug.WriteLine("[NotificationService] View appointment action triggered");
-                        }
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[NotificationService] Error handling notification activation: {ex.Message}");
-            }
-        }
-
-        private string? GetIconPath(NotificationType type)
-        {
-            return type switch
-            {
-                NotificationType.Success => "pack://application:,,,/Resources/Icons/success.png",
-                NotificationType.Warning => "pack://application:,,,/Resources/Icons/warning.png",
-                NotificationType.Error => "pack://application:,,,/Resources/Icons/error.png",
-                NotificationType.Reminder => "pack://application:,,,/Resources/Icons/reminder.png",
-                _ => null
-            };
+            return _notificationQueue.ToList();
         }
 
         private MessageBoxImage GetMessageBoxImage(NotificationType type)
@@ -222,6 +131,12 @@ namespace MonBureau.UI.Services
             };
         }
 
-        private readonly Dictionary<string, Action> _pendingActions = new();
+        public class NotificationMessage
+        {
+            public string Title { get; set; } = string.Empty;
+            public string Message { get; set; } = string.Empty;
+            public NotificationType Type { get; set; }
+            public DateTime Timestamp { get; set; }
+        }
     }
 }

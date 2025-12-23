@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Windows.Controls;
+using MonBureau.UI.Features.Cases;
 using MonBureau.UI.ViewModels;
 
-namespace MonBureau.UI.Views.Pages
+namespace MonBureau.UI.Features.Cases
 {
     public partial class CasesPage : Page, IDisposable
     {

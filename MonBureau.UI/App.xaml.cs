@@ -19,7 +19,13 @@ using MonBureau.Infrastructure.Security;
 using MonBureau.UI.Services;
 using MonBureau.UI.ViewModels;
 using MonBureau.UI.Features;
-using MonBureau.UI.ViewModels.Dialogs;
+using MonBureau.UI.Features.Clients;
+using MonBureau.UI.Features.Cases;
+using MonBureau.UI.Features.Documents;
+using MonBureau.UI.Features.Expenses;
+using MonBureau.UI.Features.Backup;
+using MonBureau.UI.Features.Rdvs;
+
 
 namespace MonBureau.UI
 {

@@ -1,16 +1,14 @@
 ﻿using System;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Documents;
 using MonBureau.UI.Features.Backup;
 using MonBureau.UI.Features.Cases;
 using MonBureau.UI.Features.Clients;
+using MonBureau.UI.Features.Documents;
 using MonBureau.UI.Features.Expenses;
 using MonBureau.UI.Features.Rdvs;
 using MonBureau.UI.ViewModels;
 using MonBureau.UI.Views.Pages;
-using MonBureau.UI.Features.Rdvs;
-using MonBureau.UI.Features.Clients;
 
 namespace MonBureau.UI.Services
 {
@@ -20,14 +18,17 @@ namespace MonBureau.UI.Services
         void NavigateToClients();
         void NavigateToCases();
         void NavigateToDocuments();
+        void NavigateToExpenses();
+        void NavigateToAppointments();
         void NavigateToBackup();
         void NavigateToSettings();
+
         event EventHandler<Page>? Navigated;
         event EventHandler<string>? PageTitleChanged;
     }
 
     /// <summary>
-    /// FIXED: Proper Documents page navigation + better error handling
+    /// FIXED: Complete navigation service with all pages
     /// </summary>
     public class NavigationService : INavigationService
     {
@@ -62,7 +63,7 @@ namespace MonBureau.UI.Services
             try
             {
                 var viewModel = App.GetService<ClientsViewModel>();
-                var page = new ClientsPage { DataContext = viewModel };
+                var page = new Features.Clients.ClientsPage { DataContext = viewModel };
 
                 _ = viewModel.InitializeAsync();
 
@@ -103,8 +104,10 @@ namespace MonBureau.UI.Services
 
             try
             {
-                // FIXED: Create actual DocumentsPage instead of placeholder
-                var page = new DocumentsPage();
+                var viewModel = App.GetService<DocumentsViewModel>();
+                var page = new Features.Documents.DocumentsPage { DataContext = viewModel };
+
+                _ = viewModel.InitializeAsync();
 
                 OnPageTitleChanged("Documents");
                 OnNavigated(page);
@@ -113,6 +116,48 @@ namespace MonBureau.UI.Services
             {
                 System.Diagnostics.Debug.WriteLine($"[NavigationService] Documents navigation error: {ex.Message}");
                 ShowNavigationError("Documents", ex);
+            }
+        }
+
+        public void NavigateToExpenses()
+        {
+            System.Diagnostics.Debug.WriteLine("[NavigationService] Navigating to Expenses");
+
+            try
+            {
+                var viewModel = App.GetService<ExpensesViewModel>();
+                var page = new ExpensesPage { DataContext = viewModel };
+
+                _ = viewModel.InitializeAsync();
+
+                OnPageTitleChanged("Dépenses");
+                OnNavigated(page);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[NavigationService] Expenses navigation error: {ex.Message}");
+                ShowNavigationError("Dépenses", ex);
+            }
+        }
+
+        public void NavigateToAppointments()
+        {
+            System.Diagnostics.Debug.WriteLine("[NavigationService] Navigating to Appointments");
+
+            try
+            {
+                var viewModel = App.GetService<AppointmentsViewModel>();
+                var page = new Features.Rdvs.AppointmentsPage { DataContext = viewModel };
+
+                _ = viewModel.InitializeAsync();
+
+                OnPageTitleChanged("Rendez-vous");
+                OnNavigated(page);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[NavigationService] Appointments navigation error: {ex.Message}");
+                ShowNavigationError("Rendez-vous", ex);
             }
         }
 
@@ -135,24 +180,6 @@ namespace MonBureau.UI.Services
                 System.Diagnostics.Debug.WriteLine($"[NavigationService] Backup navigation error: {ex.Message}");
                 ShowNavigationError("Sauvegarde", ex);
             }
-        }
-
-        public void NavigateToExpenses()
-        {
-            var viewModel = App.GetService<ExpensesViewModel>();
-            var page = new ExpensesPage { DataContext = viewModel };
-            _ = viewModel.InitializeAsync();
-            OnPageTitleChanged("Dépenses");
-            OnNavigated(page);
-        }
-
-        public void NavigateToAppointments()
-        {
-            var viewModel = App.GetService<AppointmentsViewModel>();
-            var page = new AppointmentsPage { DataContext = viewModel };
-            _ = viewModel.InitializeAsync();
-            OnPageTitleChanged("Rendez-vous");
-            OnNavigated(page);
         }
 
         public void NavigateToSettings()

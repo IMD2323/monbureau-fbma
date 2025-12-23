@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Windows.Controls;
+using MonBureau.UI.Features.Documents;
 using MonBureau.UI.ViewModels;
 
-namespace MonBureau.UI.Views.Pages
+namespace MonBureau.UI.Features.Documents
 {
     /// <summary>
     /// DocumentsPage - Clean separation following app architecture

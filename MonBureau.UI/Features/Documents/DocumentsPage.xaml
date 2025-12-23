@@ -1,6 +1,6 @@
 ﻿<!--  DocumentsPage.xaml - Simple document listing by case  -->
 <Page
-    x:Class="MonBureau.UI.Views.Pages.DocumentsPage"
+    x:Class="MonBureau.UI.Features.Documents.DocumentsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:converters="clr-namespace:MonBureau.UI.Converters"

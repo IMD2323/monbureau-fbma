@@ -6,7 +6,8 @@ using MonBureau.Core.Interfaces;
 using MonBureau.UI.ViewModels.Base;
 using MonBureau.UI.Views.Dialogs;
 
-namespace MonBureau.UI.ViewModels
+namespace MonBureau.UI.Features.Clients
+
 {
     /// <summary>
     /// FIXED: Database-level filtering instead of in-memory

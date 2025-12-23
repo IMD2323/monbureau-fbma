@@ -268,6 +268,25 @@
                                         <TextBlock VerticalAlignment="Center" Text="{loc:Localize Nav_Documents}" />
                                     </StackPanel>
                                 </Button>
+                                <Button Command="{Binding NavigateToExpensesCommand}" Style="{StaticResource NavButton}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock
+                                            Margin="0,0,12,0"
+                                            FontSize="18"
+                                            Text="💰" />
+                                        <TextBlock Text="Dépenses" />
+                                    </StackPanel>
+                                </Button>
+
+                                <Button Command="{Binding NavigateToAppointmentsCommand}" Style="{StaticResource NavButton}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock
+                                            Margin="0,0,12,0"
+                                            FontSize="18"
+                                            Text="📅" />
+                                        <TextBlock Text="Rendez-vous" />
+                                    </StackPanel>
+                                </Button>
 
                                 <!--  Divider  -->
                                 <Separator Margin="0,16" Style="{StaticResource Divider}" />

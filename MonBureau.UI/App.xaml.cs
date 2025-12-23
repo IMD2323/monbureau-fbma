@@ -18,6 +18,8 @@ using MonBureau.Infrastructure.Services.Firebase;
 using MonBureau.Infrastructure.Security;
 using MonBureau.UI.Services;
 using MonBureau.UI.ViewModels;
+using MonBureau.UI.Features;
+using MonBureau.UI.ViewModels.Dialogs;
 
 namespace MonBureau.UI
 {
@@ -372,6 +374,7 @@ namespace MonBureau.UI
             services.AddSingleton<SecureLicenseStorage>();
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddSingleton<CacheService>();
+            services.AddSingleton<NotificationService>();
             services.AddSingleton<AutoBackupService>();
 
             services.AddScoped<ICaseService, CaseService>();
@@ -383,6 +386,10 @@ namespace MonBureau.UI
             services.AddTransient<BackupViewModel>();
             services.AddTransient<SettingsViewModel>();
             services.AddTransient<DocumentsViewModel>();
+            services.AddTransient<ExpensesViewModel>();
+            services.AddTransient<AppointmentsViewModel>();
+            services.AddTransient<ExpenseDialogViewModel>();
+            services.AddTransient<AppointmentDialogViewModel>();
         }
 
         private void InitializeDatabase()

@@ -2,8 +2,15 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
+using MonBureau.UI.Features.Backup;
+using MonBureau.UI.Features.Cases;
+using MonBureau.UI.Features.Clients;
+using MonBureau.UI.Features.Expenses;
+using MonBureau.UI.Features.Rdvs;
 using MonBureau.UI.ViewModels;
 using MonBureau.UI.Views.Pages;
+using MonBureau.UI.Features.Rdvs;
+using MonBureau.UI.Features.Clients;
 
 namespace MonBureau.UI.Services
 {
@@ -128,6 +135,24 @@ namespace MonBureau.UI.Services
                 System.Diagnostics.Debug.WriteLine($"[NavigationService] Backup navigation error: {ex.Message}");
                 ShowNavigationError("Sauvegarde", ex);
             }
+        }
+
+        public void NavigateToExpenses()
+        {
+            var viewModel = App.GetService<ExpensesViewModel>();
+            var page = new ExpensesPage { DataContext = viewModel };
+            _ = viewModel.InitializeAsync();
+            OnPageTitleChanged("Dépenses");
+            OnNavigated(page);
+        }
+
+        public void NavigateToAppointments()
+        {
+            var viewModel = App.GetService<AppointmentsViewModel>();
+            var page = new AppointmentsPage { DataContext = viewModel };
+            _ = viewModel.InitializeAsync();
+            OnPageTitleChanged("Rendez-vous");
+            OnNavigated(page);
         }
 
         public void NavigateToSettings()

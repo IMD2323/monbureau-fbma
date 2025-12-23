@@ -5,6 +5,7 @@ using MonBureau.Core.Entities;
 using MonBureau.Core.Interfaces;
 using MonBureau.UI.ViewModels.Base;
 using MonBureau.UI.Views.Dialogs;
+using MonBureau.UI.Features.Clients;
 
 namespace MonBureau.UI.Features.Clients
 

@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Windows.Controls;
+using MonBureau.UI.Features.Clients;
 using MonBureau.UI.ViewModels;
 
-namespace MonBureau.UI.Views.Pages
+namespace MonBureau.UI.Features.Clients
 {
     public partial class ClientsPage : Page, IDisposable
     {

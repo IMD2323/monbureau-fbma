@@ -1,5 +1,6 @@
 ﻿using MonBureau.Core.Entities;
 using MonBureau.UI.Views.Dialogs;
+using MonBureau.UI.Features.Clients;
 
 namespace MonBureau.UI.Features.Clients
 {

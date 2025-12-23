@@ -36,7 +36,6 @@ FIXED: Downgrade EF Core Design from 10.0.1 to 8.0.11
 
 	<ItemGroup>
 	  <Folder Include="Resources\Styles\" />
-	  <Folder Include="ViewModels\Dialogs\" />
 	</ItemGroup>
 
 	<PropertyGroup>
@@ -45,6 +44,8 @@ FIXED: Downgrade EF Core Design from 10.0.1 to 8.0.11
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
+		<ApplicationManifest>app.manifest</ApplicationManifest>
+		<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
 	</PropertyGroup>
 
 </Project>

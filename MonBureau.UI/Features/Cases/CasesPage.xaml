@@ -3,7 +3,7 @@
 <!--  Reduced from 300+ lines to ~150 lines  -->
 <!--  ============================================================================  -->
 <Page
-    x:Class="MonBureau.UI.Views.Pages.CasesPage"
+    x:Class="MonBureau.UI.Features.Cases.CasesPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:converters="clr-namespace:MonBureau.UI.Converters"

@@ -1,7 +1,4 @@
-﻿<!--  ============================================================================  -->
-<!--  MainWindow.xaml - Modern Redesign with Complete Localization  -->
-<!--  ============================================================================  -->
-<Window
+﻿<Window
     x:Class="MonBureau.UI.Views.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -18,6 +15,7 @@
     WindowStyle="None">
 
     <Window.Resources>
+
         <!--  Nav Button Base Style  -->
         <Style x:Key="NavButton" TargetType="Button">
             <Setter Property="Height" Value="48" />
@@ -58,6 +56,7 @@
             <Setter Property="Background" Value="{StaticResource PrimarySubtleBrush}" />
             <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
         </Style>
+
     </Window.Resources>
 
     <Border
@@ -65,6 +64,7 @@
         BorderBrush="{StaticResource BorderBrush}"
         BorderThickness="1"
         CornerRadius="20">
+
         <Border.Effect>
             <DropShadowEffect
                 BlurRadius="30"
@@ -74,6 +74,7 @@
         </Border.Effect>
 
         <Grid>
+
             <Grid.RowDefinitions>
                 <RowDefinition Height="70" />
                 <RowDefinition Height="*" />
@@ -86,7 +87,9 @@
                 Background="{StaticResource PrimaryBrush}"
                 CornerRadius="20,20,0,0"
                 MouseDown="HeaderBar_MouseDown">
+
                 <Grid Margin="24,0">
+
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
@@ -99,12 +102,14 @@
                         Grid.Column="0"
                         VerticalAlignment="Center"
                         Orientation="Horizontal">
+
                         <Border
                             Width="40"
                             Height="40"
                             Margin="0,0,12,0"
                             Background="White"
                             CornerRadius="10">
+
                             <TextBlock
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
@@ -113,6 +118,7 @@
                                 Foreground="{StaticResource PrimaryBrush}"
                                 Text="&#xE7C3;" />
                         </Border>
+
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock
                                 FontSize="18"
@@ -125,6 +131,7 @@
                                 Opacity="0.8"
                                 Text="{Binding CurrentPageTitle}" />
                         </StackPanel>
+
                     </StackPanel>
 
                     <!--  Language Selector  -->
@@ -138,6 +145,7 @@
                         Grid.Column="3"
                         VerticalAlignment="Center"
                         Orientation="Horizontal">
+
                         <Button
                             x:Name="MinimizeButton"
                             Width="40"
@@ -176,12 +184,15 @@
                                 Foreground="White"
                                 Text="&#xE8BB;" />
                         </Button>
+
                     </StackPanel>
+
                 </Grid>
             </Border>
 
             <!--  Main Content Area  -->
             <Grid Grid.Row="1">
+
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="260" />
                     <ColumnDefinition Width="*" />
@@ -193,7 +204,9 @@
                     Background="{StaticResource BackgroundSecondaryBrush}"
                     BorderBrush="{StaticResource DividerBrush}"
                     BorderThickness="0,0,1,0">
+
                     <Grid>
+
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*" />
                             <RowDefinition Height="Auto" />
@@ -202,7 +215,7 @@
                         <!--  Navigation Items  -->
                         <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
                             <StackPanel Margin="16,20">
-                                <!--  Dashboard  -->
+
                                 <Button
                                     x:Name="DashboardButton"
                                     Click="NavigateToDashboard_Click"
@@ -218,7 +231,6 @@
                                     </StackPanel>
                                 </Button>
 
-                                <!--  Clients  -->
                                 <Button
                                     x:Name="ClientsButton"
                                     Click="NavigateToClients_Click"
@@ -235,7 +247,6 @@
                                     </StackPanel>
                                 </Button>
 
-                                <!--  Cases  -->
                                 <Button
                                     x:Name="CasesButton"
                                     Click="NavigateToCases_Click"
@@ -252,7 +263,6 @@
                                     </StackPanel>
                                 </Button>
 
-                                <!--  Documents  -->
                                 <Button
                                     x:Name="DocumentsButton"
                                     Click="NavigateToDocuments_Click"
@@ -268,7 +278,11 @@
                                         <TextBlock VerticalAlignment="Center" Text="{loc:Localize Nav_Documents}" />
                                     </StackPanel>
                                 </Button>
-                                <Button Command="{Binding NavigateToExpensesCommand}" Style="{StaticResource NavButton}">
+
+                                <Button
+                                    x:Name="ExpensesButton"
+                                    Click="NavigateToExpenses_Click"
+                                    Style="{StaticResource NavButton}">
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock
                                             Margin="0,0,12,0"
@@ -278,7 +292,10 @@
                                     </StackPanel>
                                 </Button>
 
-                                <Button Command="{Binding NavigateToAppointmentsCommand}" Style="{StaticResource NavButton}">
+                                <Button
+                                    x:Name="AppointmentsButton"
+                                    Click="NavigateToAppointments_Click"
+                                    Style="{StaticResource NavButton}">
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock
                                             Margin="0,0,12,0"
@@ -288,10 +305,8 @@
                                     </StackPanel>
                                 </Button>
 
-                                <!--  Divider  -->
                                 <Separator Margin="0,16" Style="{StaticResource Divider}" />
 
-                                <!--  Backup  -->
                                 <Button
                                     x:Name="BackupButton"
                                     Click="OpenBackup_Click"
@@ -308,7 +323,6 @@
                                     </StackPanel>
                                 </Button>
 
-                                <!--  Settings  -->
                                 <Button
                                     x:Name="SettingsButton"
                                     Click="OpenSettings_Click"
@@ -324,10 +338,11 @@
                                         <TextBlock VerticalAlignment="Center" Text="{loc:Localize Nav_Settings}" />
                                     </StackPanel>
                                 </Button>
+
                             </StackPanel>
                         </ScrollViewer>
 
-                        <!--  User Info at Bottom  -->
+                        <!--  User Info  -->
                         <Border
                             Grid.Row="1"
                             Margin="16,0,16,20"
@@ -336,13 +351,16 @@
                             BorderBrush="{StaticResource BorderBrush}"
                             BorderThickness="1"
                             CornerRadius="12">
+
                             <StackPanel Orientation="Horizontal">
+
                                 <Border
                                     Width="40"
                                     Height="40"
                                     Margin="0,0,12,0"
                                     Background="{StaticResource SecondaryBrush}"
                                     CornerRadius="20">
+
                                     <TextBlock
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Center"
@@ -351,6 +369,7 @@
                                         Foreground="White"
                                         Text="A" />
                                 </Border>
+
                                 <StackPanel VerticalAlignment="Center">
                                     <TextBlock
                                         FontSize="14"
@@ -362,8 +381,10 @@
                                         Foreground="{StaticResource SuccessBrush}"
                                         Text="{loc:Localize Status_Active}" />
                                 </StackPanel>
+
                             </StackPanel>
                         </Border>
+
                     </Grid>
                 </Border>
 
@@ -372,6 +393,7 @@
                     x:Name="MainContent"
                     Grid.Column="1"
                     NavigationUIVisibility="Hidden" />
+
             </Grid>
         </Grid>
     </Border>

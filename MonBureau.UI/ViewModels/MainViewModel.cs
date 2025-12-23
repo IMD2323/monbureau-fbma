@@ -46,5 +46,17 @@ namespace MonBureau.UI.ViewModels
         {
             // Handle logout
         }
+
+        [RelayCommand]
+        private void NavigateToExpenses()
+        {
+            _navigationService.NavigateToExpenses();
+        }
+
+        [RelayCommand]
+        private void NavigateToAppointments()
+        {
+            _navigationService.NavigateToAppointments();
+        }
     }
 }

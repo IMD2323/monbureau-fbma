@@ -11,7 +11,8 @@ using MonBureau.Core.Entities;
 using MonBureau.Core.Enums;
 using MonBureau.Infrastructure.Data;
 
-namespace MonBureau.UI.ViewModels
+namespace MonBureau.UI.Features.Documents
+
 {
     /// <summary>
     /// FIXED: Paginated document loading

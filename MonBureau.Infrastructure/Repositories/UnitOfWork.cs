@@ -9,10 +9,6 @@ using MonBureau.Infrastructure.Data;
 
 namespace MonBureau.Infrastructure.Repositories
 {
-    /// <summary>
-    /// SIMPLIFIED: Uses generic Repository<T> for all entities
-    /// Removed specialized CaseRepository and CaseItemRepository
-    /// </summary>
     public class UnitOfWork : IUnitOfWork
     {
         private readonly AppDbContext _context;
@@ -21,14 +17,15 @@ namespace MonBureau.Infrastructure.Repositories
         private IRepository<Client>? _clients;
         private IRepository<Case>? _cases;
         private IRepository<CaseItem>? _caseItems;
+        private IRepository<Expense>? _expenses;
+        private IRepository<Appointment>? _appointments;
+        private IRepository<Document>? _documents;
 
         public UnitOfWork(AppDbContext context)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        // SIMPLIFIED: All repositories use generic Repository<T>
-        // Eager loading is handled automatically in Repository.ApplyIncludes()
         public IRepository<Client> Clients =>
             _clients ??= new Repository<Client>(_context);
 
@@ -38,11 +35,18 @@ namespace MonBureau.Infrastructure.Repositories
         public IRepository<CaseItem> CaseItems =>
             _caseItems ??= new Repository<CaseItem>(_context);
 
+        public IRepository<Expense> Expenses =>
+            _expenses ??= new Repository<Expense>(_context);
+
+        public IRepository<Appointment> Appointments =>
+            _appointments ??= new Repository<Appointment>(_context);
+
+        public IRepository<Document> Documents =>
+            _documents ??= new Repository<Document>(_context);
+
         public async Task<int> SaveChangesAsync()
         {
-            // OPTIMIZED: Update timestamps automatically
             UpdateTimestamps();
-
             return await _context.SaveChangesAsync();
         }
 
@@ -87,9 +91,6 @@ namespace MonBureau.Infrastructure.Repositories
             }
         }
 
-        /// <summary>
-        /// OPTIMIZED: Automatically update UpdatedAt timestamps
-        /// </summary>
         private void UpdateTimestamps()
         {
             var entries = _context.ChangeTracker.Entries()
@@ -97,23 +98,11 @@ namespace MonBureau.Infrastructure.Repositories
 
             foreach (var entry in entries)
             {
-                if (entry.Entity is Client client)
+                if (entry.Entity is EntityBase entity)
                 {
                     if (entry.State == EntityState.Added)
-                        client.CreatedAt = DateTime.UtcNow;
-                    client.UpdatedAt = DateTime.UtcNow;
-                }
-                else if (entry.Entity is Case caseEntity)
-                {
-                    if (entry.State == EntityState.Added)
-                        caseEntity.CreatedAt = DateTime.UtcNow;
-                    caseEntity.UpdatedAt = DateTime.UtcNow;
-                }
-                else if (entry.Entity is CaseItem item)
-                {
-                    if (entry.State == EntityState.Added)
-                        item.CreatedAt = DateTime.UtcNow;
-                    item.UpdatedAt = DateTime.UtcNow;
+                        entity.CreatedAt = DateTime.UtcNow;
+                    entity.UpdatedAt = DateTime.UtcNow;
                 }
             }
         }

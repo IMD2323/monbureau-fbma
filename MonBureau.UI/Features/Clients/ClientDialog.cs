@@ -1,6 +1,7 @@
 ﻿using MonBureau.Core.Entities;
+using MonBureau.UI.Views.Dialogs;
 
-namespace MonBureau.UI.Views.Dialogs
+namespace MonBureau.UI.Features.Clients
 {
     /// <summary>
     /// Compatibility wrapper for ClientDialog

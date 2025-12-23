@@ -3,10 +3,11 @@ using System.Linq.Expressions;
 using System.Windows;
 using MonBureau.Core.Entities;
 using MonBureau.Core.Interfaces;
+using MonBureau.UI.Features.Clients;
 using MonBureau.UI.ViewModels.Base;
 using MonBureau.UI.Views.Dialogs;
 
-namespace MonBureau.UI.ViewModels
+namespace MonBureau.UI.Features.Cases
 {
     /// <summary>
     /// FIXED: Database-level filtering for Cases

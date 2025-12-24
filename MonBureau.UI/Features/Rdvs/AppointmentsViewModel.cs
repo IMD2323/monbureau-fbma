@@ -12,20 +12,18 @@ using MonBureau.Core.Enums;
 using MonBureau.Core.Interfaces;
 using MonBureau.UI.Services;
 using MonBureau.UI.ViewModels.Base;
-using MonBureau.UI.Views.Dialogs;
-using MonBureau.UI.Features.Rdvs;
-using MonBureau.UI.Features.Cases;
 using MonBureau.Infrastructure.Data;
+using MonBureau.UI.Features.Rdvs;
 
 namespace MonBureau.UI.Features.Rdvs
 {
     /// <summary>
-    /// FIXED: Added missing IsLoading property and fixed repository usage
+    /// FIXED: Properly inherits from CrudViewModelBase with dashboard statistics
     /// </summary>
     public partial class AppointmentsViewModel : CrudViewModelBase<Appointment>
     {
         private readonly NotificationService _notificationService;
-        private readonly AppDbContext _context;
+        private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
         [ObservableProperty]
         private ObservableCollection<Appointment> _todayAppointments = new();
@@ -43,21 +41,24 @@ namespace MonBureau.UI.Features.Rdvs
         private DateTime _selectedDate = DateTime.Today;
 
         [ObservableProperty]
-        private string _viewMode = "List"; // List, Calendar, Day
+        private string _viewMode = "List";
 
         public AppointmentsViewModel(
             IUnitOfWork unitOfWork,
             NotificationService notificationService,
-            AppDbContext context)
+            IDbContextFactory<AppDbContext> contextFactory)
             : base(unitOfWork)
         {
             _notificationService = notificationService ?? throw new ArgumentNullException(nameof(notificationService));
-            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
         }
 
         protected override IRepository<Appointment> GetRepository()
             => _unitOfWork.Appointments;
 
+        /// <summary>
+        /// FIXED: Database-level filtering for appointments
+        /// </summary>
         protected override Expression<Func<Appointment, bool>>? BuildFilterExpression(string searchText)
         {
             if (string.IsNullOrWhiteSpace(searchText))
@@ -75,6 +76,9 @@ namespace MonBureau.UI.Features.Rdvs
                      (a.Case.Client.LastName != null && a.Case.Client.LastName.ToLower().Contains(lowerSearch))));
         }
 
+        /// <summary>
+        /// FIXED: Load dashboard panels after base initialization
+        /// </summary>
         public override async Task InitializeAsync()
         {
             await base.InitializeAsync();
@@ -84,7 +88,7 @@ namespace MonBureau.UI.Features.Rdvs
         }
 
         /// <summary>
-        /// FIXED: Use DbContext directly instead of deprecated repository methods
+        /// Load today's appointments with separate context
         /// </summary>
         private async Task LoadTodayAppointmentsAsync()
         {
@@ -93,7 +97,9 @@ namespace MonBureau.UI.Features.Rdvs
                 var today = DateTime.Today;
                 var tomorrow = today.AddDays(1);
 
-                var appointments = await _context.Appointments
+                await using var context = await _contextFactory.CreateDbContextAsync();
+
+                var appointments = await context.Appointments
                     .AsNoTracking()
                     .Include(a => a.Case)
                         .ThenInclude(c => c.Client)
@@ -112,12 +118,12 @@ namespace MonBureau.UI.Features.Rdvs
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[AppointmentsViewModel] Error loading today's appointments: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[AppointmentsViewModel] Error loading today: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// FIXED: Use DbContext directly instead of deprecated repository methods
+        /// Load upcoming appointments (next 7 days)
         /// </summary>
         private async Task LoadUpcomingAppointmentsAsync()
         {
@@ -126,7 +132,9 @@ namespace MonBureau.UI.Features.Rdvs
                 var tomorrow = DateTime.Today.AddDays(1);
                 var nextWeek = DateTime.Today.AddDays(7);
 
-                var appointments = await _context.Appointments
+                await using var context = await _contextFactory.CreateDbContextAsync();
+
+                var appointments = await context.Appointments
                     .AsNoTracking()
                     .Include(a => a.Case)
                         .ThenInclude(c => c.Client)
@@ -145,18 +153,20 @@ namespace MonBureau.UI.Features.Rdvs
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[AppointmentsViewModel] Error loading upcoming appointments: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[AppointmentsViewModel] Error loading upcoming: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// FIXED: Use DbContext directly
+        /// Check and send pending reminders
         /// </summary>
         private async Task CheckPendingRemindersAsync()
         {
             try
             {
-                var appointments = await _context.Appointments
+                await using var context = await _contextFactory.CreateDbContextAsync();
+
+                var appointments = await context.Appointments
                     .AsNoTracking()
                     .Where(a =>
                         a.ReminderEnabled &&
@@ -178,6 +188,9 @@ namespace MonBureau.UI.Features.Rdvs
             }
         }
 
+        /// <summary>
+        /// Send reminder notification
+        /// </summary>
         private async Task SendReminderAsync(Appointment appointment)
         {
             try
@@ -191,8 +204,6 @@ namespace MonBureau.UI.Features.Rdvs
                 appointment.ReminderSentAt = DateTime.UtcNow;
                 await GetRepository().UpdateAsync(appointment);
                 await _unitOfWork.SaveChangesAsync();
-
-                System.Diagnostics.Debug.WriteLine($"[AppointmentsViewModel] Reminder sent for: {appointment.Title}");
             }
             catch (Exception ex)
             {
@@ -200,46 +211,13 @@ namespace MonBureau.UI.Features.Rdvs
             }
         }
 
+        #region Commands
+
         [RelayCommand]
         private async Task ChangeViewMode(string mode)
         {
             ViewMode = mode;
             await RefreshAsync();
-        }
-
-        [RelayCommand]
-        private async Task SelectDate(DateTime date)
-        {
-            SelectedDate = date;
-            await LoadAppointmentsForDateAsync(date);
-        }
-
-        /// <summary>
-        /// FIXED: Use DbContext directly
-        /// </summary>
-        private async Task LoadAppointmentsForDateAsync(DateTime date)
-        {
-            try
-            {
-                var nextDay = date.AddDays(1);
-
-                var appointments = await _context.Appointments
-                    .AsNoTracking()
-                    .Include(a => a.Case)
-                        .ThenInclude(c => c.Client)
-                    .Where(a => a.StartTime >= date && a.StartTime < nextDay)
-                    .OrderBy(a => a.StartTime)
-                    .ToListAsync();
-
-                await Application.Current.Dispatcher.InvokeAsync(() =>
-                {
-                    Items = new ObservableCollection<Appointment>(appointments);
-                });
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[AppointmentsViewModel] Error loading appointments for date: {ex.Message}");
-            }
         }
 
         [RelayCommand]
@@ -263,16 +241,29 @@ namespace MonBureau.UI.Features.Rdvs
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[AppointmentsViewModel] Error marking as completed: {ex.Message}");
-                ShowError("Erreur lors de la mise à jour du rendez-vous");
+                ShowError($"Erreur: {ex.Message}");
             }
         }
 
-        protected override Window CreateAddDialog()
-            => new AppointmentDialog();
+        #endregion
 
+        /// <summary>
+        /// FIXED: Create dialog properly
+        /// </summary>
+        protected override Window CreateAddDialog()
+        {
+            var dialog = new AppointmentDialog();
+            return dialog;
+        }
+
+        /// <summary>
+        /// FIXED: Create edit dialog with entity
+        /// </summary>
         protected override Window CreateEditDialog(Appointment entity)
-            => new AppointmentDialog(entity);
+        {
+            var dialog = new AppointmentDialog(entity);
+            return dialog;
+        }
 
         protected override string GetEntityName()
             => "Rendez-vous";
@@ -282,5 +273,15 @@ namespace MonBureau.UI.Features.Rdvs
 
         protected override string GetEntityDisplayName(Appointment entity)
             => $"{entity.Title} - {entity.StartTime:dd/MM/yyyy HH:mm}";
+
+        /// <summary>
+        /// FIXED: Refresh dashboard panels after CRUD operations
+        /// </summary>
+        protected override async Task RefreshAsync()
+        {
+            await base.RefreshAsync();
+            await LoadTodayAppointmentsAsync();
+            await LoadUpcomingAppointmentsAsync();
+        }
     }
 }

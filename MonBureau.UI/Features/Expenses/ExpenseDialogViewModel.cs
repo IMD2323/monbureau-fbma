@@ -3,19 +3,18 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Win32;
 using MonBureau.Core.Entities;
 using MonBureau.Core.Enums;
 using MonBureau.Core.Interfaces;
-using MonBureau.Core.Validators;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace MonBureau.UI.Features.Expenses
 {
+    /// <summary>
+    /// FIXED: Proper decimal binding and validation
+    /// </summary>
     public partial class ExpenseDialogViewModel : ObservableObject
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -24,8 +23,9 @@ namespace MonBureau.UI.Features.Expenses
         [ObservableProperty]
         private string _description = string.Empty;
 
+        // FIXED: Use string for amount to handle decimal input properly
         [ObservableProperty]
-        private decimal _amount;
+        private string _amountText = "0";
 
         [ObservableProperty]
         private DateTime _date = DateTime.Today;
@@ -79,8 +79,8 @@ namespace MonBureau.UI.Features.Expenses
         {
             try
             {
-                var cases = await _unitOfWork.Cases.GetAllAsync();
-                var clients = await _unitOfWork.Clients.GetAllAsync();
+                var cases = await _unitOfWork.Cases.GetPagedAsync(0, 1000);
+                var clients = await _unitOfWork.Clients.GetPagedAsync(0, 1000);
 
                 await Application.Current.Dispatcher.InvokeAsync(() =>
                 {
@@ -104,7 +104,7 @@ namespace MonBureau.UI.Features.Expenses
             if (_existingExpense == null) return;
 
             Description = _existingExpense.Description;
-            Amount = _existingExpense.Amount;
+            AmountText = _existingExpense.Amount.ToString("F2");
             Date = _existingExpense.Date;
             SelectedCategory = _existingExpense.Category;
             PaymentMethod = _existingExpense.PaymentMethod;
@@ -144,9 +144,10 @@ namespace MonBureau.UI.Features.Expenses
                 return;
             }
 
-            if (Amount <= 0)
+            // FIXED: Parse amount from string
+            if (!decimal.TryParse(AmountText, out var amount) || amount <= 0)
             {
-                ValidationError = "Le montant doit être supérieur à 0";
+                ValidationError = "Le montant doit être un nombre valide supérieur à 0";
                 return;
             }
 
@@ -162,7 +163,7 @@ namespace MonBureau.UI.Features.Expenses
                 {
                     // Update existing
                     _existingExpense.Description = Description;
-                    _existingExpense.Amount = Amount;
+                    _existingExpense.Amount = amount;
                     _existingExpense.Date = Date;
                     _existingExpense.Category = SelectedCategory;
                     _existingExpense.PaymentMethod = PaymentMethod;
@@ -181,7 +182,7 @@ namespace MonBureau.UI.Features.Expenses
                     var expense = new Expense
                     {
                         Description = Description,
-                        Amount = Amount,
+                        Amount = amount,
                         Date = Date,
                         Category = SelectedCategory,
                         PaymentMethod = PaymentMethod,

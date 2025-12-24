@@ -3,18 +3,16 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MonBureau.Core.Entities;
 using MonBureau.Core.Enums;
 using MonBureau.Core.Interfaces;
-using MonBureau.UI.Features.Rdvs;
 
 namespace MonBureau.UI.Features.Rdvs
 {
     /// <summary>
-    /// FIXED: Proper time handling for TimeSpan formatting
+    /// FIXED: String parameter for quick duration command
     /// </summary>
     public partial class AppointmentDialogViewModel : ObservableObject
     {
@@ -30,14 +28,12 @@ namespace MonBureau.UI.Features.Rdvs
         [ObservableProperty]
         private DateTime _startDate = DateTime.Today;
 
-        // FIXED: Use string for time input instead of TimeSpan with StringFormat
         [ObservableProperty]
         private string _startTime = "09:00";
 
         [ObservableProperty]
         private DateTime _endDate = DateTime.Today;
 
-        // FIXED: Use string for time input instead of TimeSpan with StringFormat
         [ObservableProperty]
         private string _endTime = "10:00";
 
@@ -72,14 +68,12 @@ namespace MonBureau.UI.Features.Rdvs
 
         public Array AppointmentTypes => Enum.GetValues(typeof(AppointmentType));
         public Array AppointmentStatuses => Enum.GetValues(typeof(AppointmentStatus));
-
-        public int[] ReminderOptions => new[] { 5, 15, 30, 60, 120, 1440 }; // minutes
+        public int[] ReminderOptions => new[] { 5, 15, 30, 60, 120, 1440 };
 
         public AppointmentDialogViewModel(IUnitOfWork unitOfWork, Appointment? appointment = null)
         {
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _existingAppointment = appointment;
-
             _ = LoadDataAsync();
         }
 
@@ -87,7 +81,8 @@ namespace MonBureau.UI.Features.Rdvs
         {
             try
             {
-                var cases = await _unitOfWork.Cases.GetAllAsync();
+                // FIXED: Use GetPagedAsync instead of GetAllAsync
+                var cases = await _unitOfWork.Cases.GetPagedAsync(0, 1000);
 
                 await Application.Current.Dispatcher.InvokeAsync(() =>
                 {
@@ -112,29 +107,32 @@ namespace MonBureau.UI.Features.Rdvs
             Title = _existingAppointment.Title;
             Description = _existingAppointment.Description;
             StartDate = _existingAppointment.StartTime.Date;
-
-            // FIXED: Format TimeSpan as HH:mm string
             StartTime = _existingAppointment.StartTime.ToString("HH:mm");
-
             EndDate = _existingAppointment.EndTime.Date;
-
-            // FIXED: Format TimeSpan as HH:mm string
             EndTime = _existingAppointment.EndTime.ToString("HH:mm");
-
             Location = _existingAppointment.Location;
             SelectedType = _existingAppointment.Type;
             SelectedStatus = _existingAppointment.Status;
             ReminderEnabled = _existingAppointment.ReminderEnabled;
             ReminderMinutesBefore = _existingAppointment.ReminderMinutesBefore;
             Attendees = _existingAppointment.Attendees;
-
             SelectedCase = Cases.FirstOrDefault(c => c.Id == _existingAppointment.CaseId);
         }
 
+        /// <summary>
+        /// FIXED: Accept string parameter from XAML CommandParameter
+        /// </summary>
         [RelayCommand]
-        private void SetQuickDuration(int minutes)
+        private void SetQuickDuration(string minutesStr)
         {
-            // FIXED: Parse start time and add minutes
+            // Parse string to int
+            if (!int.TryParse(minutesStr, out int minutes))
+            {
+                System.Diagnostics.Debug.WriteLine($"[AppointmentDialog] Invalid minutes: {minutesStr}");
+                return;
+            }
+
+            // Parse start time and add minutes
             if (TimeSpan.TryParse(StartTime, out var startTimeSpan))
             {
                 var endTimeSpan = startTimeSpan.Add(TimeSpan.FromMinutes(minutes));
@@ -150,7 +148,7 @@ namespace MonBureau.UI.Features.Rdvs
                     EndDate = StartDate;
                 }
 
-                EndTime = endTimeSpan.ToString(@"hh\:mm");
+                EndTime = endTimeSpan.ToString(@"HH\:mm");
             }
         }
 
@@ -159,7 +157,6 @@ namespace MonBureau.UI.Features.Rdvs
         {
             ValidationError = null;
 
-            // Validate
             if (string.IsNullOrWhiteSpace(Title))
             {
                 ValidationError = "Le titre est obligatoire";
@@ -172,7 +169,6 @@ namespace MonBureau.UI.Features.Rdvs
                 return;
             }
 
-            // FIXED: Parse time strings
             if (!TimeSpan.TryParse(StartTime, out var startTimeSpan))
             {
                 ValidationError = "Heure de début invalide (format: HH:mm)";
@@ -204,7 +200,6 @@ namespace MonBureau.UI.Features.Rdvs
             {
                 if (_existingAppointment != null)
                 {
-                    // Update existing
                     _existingAppointment.Title = Title;
                     _existingAppointment.Description = Description;
                     _existingAppointment.StartTime = startDateTime;
@@ -221,7 +216,6 @@ namespace MonBureau.UI.Features.Rdvs
                 }
                 else
                 {
-                    // Create new
                     var appointment = new Appointment
                     {
                         Title = Title,

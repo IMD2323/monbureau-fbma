@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using System.Windows;
@@ -8,15 +7,17 @@ using MonBureau.Core.Entities;
 using MonBureau.Core.Interfaces;
 using MonBureau.UI.ViewModels.Base;
 using MonBureau.UI.Views.Dialogs;
+
 namespace MonBureau.UI.Features.Expenses
 {
     /// <summary>
-    /// ViewModel for Expenses management with filtering and statistics
+    /// FIXED: Properly inherits from CrudViewModelBase with all required properties
     /// </summary>
     public partial class ExpensesViewModel : CrudViewModelBase<Expense>
     {
         [ObservableProperty]
         private decimal _totalExpenses;
+
         [ObservableProperty]
         private decimal _paidExpenses;
 
@@ -26,12 +27,6 @@ namespace MonBureau.UI.Features.Expenses
         [ObservableProperty]
         private int _expenseCount;
 
-        [ObservableProperty]
-        private string? _selectedCaseFilter;
-
-        [ObservableProperty]
-        private string? _selectedCategoryFilter;
-
         public ExpensesViewModel(IUnitOfWork unitOfWork)
             : base(unitOfWork)
         {
@@ -40,6 +35,9 @@ namespace MonBureau.UI.Features.Expenses
         protected override IRepository<Expense> GetRepository()
             => _unitOfWork.Expenses;
 
+        /// <summary>
+        /// FIXED: Database-level filtering for expenses
+        /// </summary>
         protected override Expression<Func<Expense, bool>>? BuildFilterExpression(string searchText)
         {
             if (string.IsNullOrWhiteSpace(searchText))
@@ -57,30 +55,38 @@ namespace MonBureau.UI.Features.Expenses
                      (e.Case.Client.LastName != null && e.Case.Client.LastName.ToLower().Contains(lowerSearch))));
         }
 
+        /// <summary>
+        /// FIXED: Override to calculate statistics after loading
+        /// </summary>
         public override async Task InitializeAsync()
         {
             await base.InitializeAsync();
             await CalculateStatisticsAsync();
         }
 
-        // FIXED: Removed override keyword - this is a custom method
-        protected async Task OnItemsLoadedAsync()
-        {
-            await CalculateStatisticsAsync();
-        }
-
+        /// <summary>
+        /// Calculate statistics from current page items
+        /// Note: This only shows stats for current page - you may want to calculate from all items
+        /// </summary>
         private async Task CalculateStatisticsAsync()
         {
             try
             {
                 await Task.Run(() =>
                 {
-                    var expenses = Items.ToList();
+                    var expenses = Items;
 
-                    TotalExpenses = expenses.Sum(e => e.Amount);
-                    PaidExpenses = expenses.Where(e => e.IsPaid).Sum(e => e.Amount);
-                    UnpaidExpenses = expenses.Where(e => !e.IsPaid).Sum(e => e.Amount);
-                    ExpenseCount = expenses.Count;
+                    // Use the backing field names (lowercase first letter)
+                    _totalExpenses = expenses.Sum(e => e.Amount);
+                    _paidExpenses = expenses.Where(e => e.IsPaid).Sum(e => e.Amount);
+                    _unpaidExpenses = expenses.Where(e => !e.IsPaid).Sum(e => e.Amount);
+                    _expenseCount = expenses.Count;
+
+                    // Manually trigger property change notifications
+                    OnPropertyChanged(nameof(TotalExpenses));
+                    OnPropertyChanged(nameof(PaidExpenses));
+                    OnPropertyChanged(nameof(UnpaidExpenses));
+                    OnPropertyChanged(nameof(ExpenseCount));
 
                     System.Diagnostics.Debug.WriteLine(
                         $"[ExpensesViewModel] Stats - Total: {TotalExpenses:C}, Paid: {PaidExpenses:C}, Unpaid: {UnpaidExpenses:C}"
@@ -93,18 +99,28 @@ namespace MonBureau.UI.Features.Expenses
             }
         }
 
+        /// <summary>
+        /// FIXED: Create dialog with proper ViewModel initialization
+        /// </summary>
         protected override Window CreateAddDialog()
         {
             var dialog = new ExpenseDialog();
-            dialog.DataContext = App.GetService<ExpenseDialogViewModel>();
+            var viewModel = App.GetService<ExpenseDialogViewModel>();
+            dialog.DataContext = viewModel;
             return dialog;
         }
 
+        /// <summary>
+        /// FIXED: Create edit dialog with entity
+        /// </summary>
         protected override Window CreateEditDialog(Expense entity)
         {
-            var viewModel = App.GetService<ExpenseDialogViewModel>();
             var dialog = new ExpenseDialog();
+
+            // Create ViewModel with existing expense
+            var viewModel = new ExpenseDialogViewModel(_unitOfWork, entity);
             dialog.DataContext = viewModel;
+
             return dialog;
         }
 
@@ -116,5 +132,14 @@ namespace MonBureau.UI.Features.Expenses
 
         protected override string GetEntityDisplayName(Expense entity)
             => entity.Description;
+
+        /// <summary>
+        /// FIXED: Refresh statistics after any CRUD operation
+        /// </summary>
+        protected override async Task RefreshAsync()
+        {
+            await base.RefreshAsync();
+            await CalculateStatisticsAsync();
+        }
     }
 }

@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using MonBureau.Core.Entities;
 using MonBureau.Core.Enums;
 using MonBureau.Infrastructure.Data;
+using MonBureau.UI.Features.Cases;
 
 namespace MonBureau.UI.Features.Documents
 

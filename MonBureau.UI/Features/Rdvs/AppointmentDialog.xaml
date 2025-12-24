@@ -1,0 +1,286 @@
+<!--  MonBureau.UI/Features/Rdvs/AppointmentDialog.xaml  -->
+<Window
+    x:Class="MonBureau.UI.Features.Rdvs.AppointmentDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Rendez-vous"
+    Width="700"
+    Height="800"
+    Background="{StaticResource BackgroundBrush}"
+    ResizeMode="NoResize"
+    WindowStartupLocation="CenterOwner">
+
+    <Border Padding="32">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!--  Header  -->
+            <StackPanel Grid.Row="0" Margin="0,0,0,24">
+                <TextBlock FontSize="24" FontWeight="Bold">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Text" Value="Nouveau Rendez-vous" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsEditMode}" Value="True">
+                                    <Setter Property="Text" Value="Modifier Rendez-vous" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <TextBlock
+                    Margin="0,4,0,0"
+                    FontSize="14"
+                    Foreground="{StaticResource TextSecondaryBrush}"
+                    Text="Planifier un rendez-vous ou une audience" />
+            </StackPanel>
+
+            <!--  Form  -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <!--  Title  -->
+                    <StackPanel Margin="0,0,0,20">
+                        <TextBlock
+                            Margin="0,0,0,8"
+                            FontSize="13"
+                            FontWeight="Medium"
+                            Text="Titre *" />
+                        <TextBox Style="{StaticResource ModernTextBox}" Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}" />
+                    </StackPanel>
+
+                    <!--  Date & Time  -->
+                    <Grid Margin="0,0,0,20">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="16" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock
+                                Margin="0,0,0,8"
+                                FontSize="13"
+                                FontWeight="Medium"
+                                Text="Date de debut *" />
+                            <DatePicker SelectedDate="{Binding StartDate}" Style="{StaticResource ModernDatePicker}" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <TextBlock
+                                Margin="0,0,0,8"
+                                FontSize="13"
+                                FontWeight="Medium"
+                                Text="Heure de debut *" />
+                            <TextBox Style="{StaticResource ModernTextBox}" Text="{Binding StartTime, StringFormat='HH:mm'}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid Margin="0,0,0,20">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="16" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock
+                                Margin="0,0,0,8"
+                                FontSize="13"
+                                FontWeight="Medium"
+                                Text="Date de fin *" />
+                            <DatePicker SelectedDate="{Binding EndDate}" Style="{StaticResource ModernDatePicker}" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <TextBlock
+                                Margin="0,0,0,8"
+                                FontSize="13"
+                                FontWeight="Medium"
+                                Text="Heure de fin *" />
+                            <TextBox Style="{StaticResource ModernTextBox}" Text="{Binding EndTime, StringFormat='HH:mm'}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!--  Quick Duration Buttons  -->
+                    <StackPanel Margin="0,0,0,20" Orientation="Horizontal">
+                        <TextBlock
+                            Margin="0,0,12,0"
+                            VerticalAlignment="Center"
+                            FontSize="13"
+                            Text="Duree rapide:" />
+                        <Button
+                            Margin="0,0,8,0"
+                            Command="{Binding SetQuickDurationCommand}"
+                            CommandParameter="30"
+                            Content="30 min"
+                            Style="{StaticResource OutlineButton}" />
+                        <Button
+                            Margin="0,0,8,0"
+                            Command="{Binding SetQuickDurationCommand}"
+                            CommandParameter="60"
+                            Content="1h"
+                            Style="{StaticResource OutlineButton}" />
+                        <Button
+                            Command="{Binding SetQuickDurationCommand}"
+                            CommandParameter="120"
+                            Content="2h"
+                            Style="{StaticResource OutlineButton}" />
+                    </StackPanel>
+
+                    <!--  Location  -->
+                    <StackPanel Margin="0,0,0,20">
+                        <TextBlock
+                            Margin="0,0,0,8"
+                            FontSize="13"
+                            FontWeight="Medium"
+                            Text="Lieu" />
+                        <TextBox Style="{StaticResource ModernTextBox}" Text="{Binding Location, UpdateSourceTrigger=PropertyChanged}" />
+                    </StackPanel>
+
+                    <!--  Type & Status  -->
+                    <Grid Margin="0,0,0,20">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="16" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock
+                                Margin="0,0,0,8"
+                                FontSize="13"
+                                FontWeight="Medium"
+                                Text="Type *" />
+                            <ComboBox
+                                ItemsSource="{Binding AppointmentTypes}"
+                                SelectedItem="{Binding SelectedType}"
+                                Style="{StaticResource ModernComboBox}" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <TextBlock
+                                Margin="0,0,0,8"
+                                FontSize="13"
+                                FontWeight="Medium"
+                                Text="Statut *" />
+                            <ComboBox
+                                ItemsSource="{Binding AppointmentStatuses}"
+                                SelectedItem="{Binding SelectedStatus}"
+                                Style="{StaticResource ModernComboBox}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!--  Case Selection  -->
+                    <StackPanel Margin="0,0,0,20">
+                        <TextBlock
+                            Margin="0,0,0,8"
+                            FontSize="13"
+                            FontWeight="Medium"
+                            Text="Dossier *" />
+                        <ComboBox
+                            DisplayMemberPath="Number"
+                            ItemsSource="{Binding Cases}"
+                            SelectedItem="{Binding SelectedCase}"
+                            Style="{StaticResource ModernComboBox}" />
+                    </StackPanel>
+
+                    <!--  Description  -->
+                    <StackPanel Margin="0,0,0,20">
+                        <TextBlock
+                            Margin="0,0,0,8"
+                            FontSize="13"
+                            FontWeight="Medium"
+                            Text="Description" />
+                        <TextBox
+                            MinHeight="80"
+                            AcceptsReturn="True"
+                            Style="{StaticResource ModernTextBox}"
+                            Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}"
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <!--  Attendees  -->
+                    <StackPanel Margin="0,0,0,20">
+                        <TextBlock
+                            Margin="0,0,0,8"
+                            FontSize="13"
+                            FontWeight="Medium"
+                            Text="Participants" />
+                        <TextBox Style="{StaticResource ModernTextBox}" Text="{Binding Attendees, UpdateSourceTrigger=PropertyChanged}" />
+                    </StackPanel>
+
+                    <!--  Reminder Settings  -->
+                    <Border
+                        Margin="0,0,0,20"
+                        Padding="16"
+                        Background="{StaticResource BackgroundBrush}"
+                        CornerRadius="8">
+                        <StackPanel>
+                            <CheckBox
+                                Content="Activer le rappel"
+                                IsChecked="{Binding ReminderEnabled}"
+                                Style="{StaticResource ModernCheckBox}" />
+
+                            <StackPanel Margin="0,12,0,0" Visibility="{Binding ReminderEnabled, Converter={StaticResource BoolToVis}}">
+                                <TextBlock
+                                    Margin="0,0,0,8"
+                                    FontSize="13"
+                                    FontWeight="Medium"
+                                    Text="Minutes avant" />
+                                <ComboBox
+                                    ItemsSource="{Binding ReminderOptions}"
+                                    SelectedItem="{Binding ReminderMinutesBefore}"
+                                    Style="{StaticResource ModernComboBox}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!--  Validation Error  -->
+                    <Border
+                        Padding="12"
+                        Background="{StaticResource ErrorSubtleBrush}"
+                        BorderBrush="{StaticResource ErrorBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Visibility="{Binding ValidationError, Converter={StaticResource BoolToVis}}">
+                        <TextBlock
+                            FontSize="13"
+                            Foreground="{StaticResource ErrorBrush}"
+                            Text="{Binding ValidationError}"
+                            TextWrapping="Wrap" />
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!--  Actions  -->
+            <Grid Grid.Row="2" Margin="0,20,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <Button
+                    Grid.Column="1"
+                    Margin="0,0,12,0"
+                    Padding="24,12"
+                    Command="{Binding CancelCommand}"
+                    CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"
+                    Content="Annuler"
+                    Style="{StaticResource OutlineButton}" />
+
+                <Button
+                    Grid.Column="2"
+                    Padding="24,12"
+                    Command="{Binding SaveCommand}"
+                    CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"
+                    Content="Enregistrer"
+                    Style="{StaticResource PrimaryButton}" />
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

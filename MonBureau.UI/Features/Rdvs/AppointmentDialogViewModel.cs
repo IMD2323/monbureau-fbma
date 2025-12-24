@@ -9,7 +9,7 @@ using CommunityToolkit.Mvvm.Input;
 using MonBureau.Core.Entities;
 using MonBureau.Core.Enums;
 using MonBureau.Core.Interfaces;
-using MonBureau.UI.Features.Rdvs
+using MonBureau.UI.Features.Rdvs;
 
 namespace MonBureau.UI.Features.Rdvs
 {

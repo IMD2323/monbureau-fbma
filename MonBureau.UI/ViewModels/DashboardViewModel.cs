@@ -12,6 +12,12 @@ using MonBureau.Core.Enums;
 using MonBureau.Core.Interfaces;
 using MonBureau.Infrastructure.Data;
 using MonBureau.Infrastructure.Services;
+using MonBureau.UI.Features;
+using MonBureau.UI.Features.Clients;
+using MonBureau.UI.Features.Cases;
+using MonBureau.UI.Features.Expenses;
+using MonBureau.UI.Features.Rdvs;
+
 
 namespace MonBureau.UI.ViewModels
 {

@@ -2,11 +2,14 @@
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MonBureau.UI.Services;
 
 namespace MonBureau.UI.ViewModels
 {
     public partial class MainViewModel : ObservableObject
     {
+        private readonly INavigationService _navigationService;
+
         [ObservableProperty]
         private string _currentPageTitle = "Tableau de Bord";
 
@@ -16,9 +19,11 @@ namespace MonBureau.UI.ViewModels
         [ObservableProperty]
         private string _userName = "Utilisateur";
 
-        public MainViewModel()
+        public MainViewModel(INavigationService navigationService)
         {
-            // Initialize with dashboard
+            _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
+
+            // Initialize with dashboard  
             NavigateToDashboard();
         }
 
@@ -26,25 +31,25 @@ namespace MonBureau.UI.ViewModels
         private void NavigateToDashboard()
         {
             CurrentPageTitle = "Tableau de Bord";
-            // In actual implementation, set CurrentView to DashboardPage
+            // In actual implementation, set CurrentView to DashboardPage  
         }
 
         [RelayCommand]
         private void OpenSettings()
         {
-            // Open settings flyout
+            // Open settings flyout  
         }
 
         [RelayCommand]
         private void OpenBackup()
         {
-            // Open backup dialog
+            // Open backup dialog  
         }
 
         [RelayCommand]
         private void Logout()
         {
-            // Handle logout
+            // Handle logout  
         }
 
         [RelayCommand]

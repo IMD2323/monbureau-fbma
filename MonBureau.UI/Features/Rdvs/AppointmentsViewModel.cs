@@ -12,6 +12,9 @@ using MonBureau.Core.Interfaces;
 using MonBureau.UI.Services;
 using MonBureau.UI.ViewModels.Base;
 using MonBureau.UI.Views.Dialogs;
+using MonBureau.UI.Features.Rdvs;
+using MonBureau.UI.Features.Cases;
+
 
 namespace MonBureau.UI.Features.Rdvs
 {

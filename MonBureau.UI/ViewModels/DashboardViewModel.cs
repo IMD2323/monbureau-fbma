@@ -17,6 +17,7 @@ using MonBureau.UI.Features.Clients;
 using MonBureau.UI.Features.Cases;
 using MonBureau.UI.Features.Expenses;
 using MonBureau.UI.Features.Rdvs;
+using MonBureau.UI.Features.Documents;
 
 
 namespace MonBureau.UI.ViewModels
@@ -234,7 +235,7 @@ namespace MonBureau.UI.ViewModels
 
             try
             {
-                var dialog = new Views.Dialogs.ClientDialog();
+                var dialog = new ClientDialog();
                 if (dialog.ShowDialog() == true)
                 {
                     _cache.Invalidate(StatsCacheKey);
@@ -255,7 +256,7 @@ namespace MonBureau.UI.ViewModels
 
             try
             {
-                var dialog = new Views.Dialogs.CaseDialog();
+                var dialog = new CaseDialog();
                 if (dialog.ShowDialog() == true)
                 {
                     _cache.Invalidate(StatsCacheKey);
@@ -276,7 +277,7 @@ namespace MonBureau.UI.ViewModels
 
             try
             {
-                var dialog = new Views.Dialogs.ItemDialog();
+                var dialog = new ItemDialog();
                 if (dialog.ShowDialog() == true)
                 {
                     _cache.Invalidate(StatsCacheKey);
@@ -297,7 +298,7 @@ namespace MonBureau.UI.ViewModels
 
             try
             {
-                var dialog = new Views.Dialogs.ClientDialog(client);
+                var dialog = new ClientDialog(client);
                 if (dialog.ShowDialog() == true)
                 {
                     _cache.Invalidate(StatsCacheKey);
@@ -318,7 +319,7 @@ namespace MonBureau.UI.ViewModels
 
             try
             {
-                var dialog = new Views.Dialogs.CaseDialog(caseEntity);
+                var dialog = new CaseDialog(caseEntity);
                 if (dialog.ShowDialog() == true)
                 {
                     _cache.Invalidate(StatsCacheKey);
@@ -339,7 +340,7 @@ namespace MonBureau.UI.ViewModels
 
             try
             {
-                var dialog = new Views.Dialogs.ItemDialog(item);
+                var dialog = new ItemDialog(item);
                 if (dialog.ShowDialog() == true)
                 {
                     _cache.Invalidate(StatsCacheKey);

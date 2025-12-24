@@ -1,4 +1,4 @@
-<!--  MonBureau.UI/Features/Rdvs/AppointmentDialog.xaml  -->
+<!--  MonBureau.UI/Features/Rdvs/AppointmentDialog.xaml - FIXED  -->
 <Window
     x:Class="MonBureau.UI.Features.Rdvs.AppointmentDialog"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -52,7 +52,7 @@
                         <TextBox Style="{StaticResource ModernTextBox}" Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}" />
                     </StackPanel>
 
-                    <!--  Date & Time  -->
+                    <!--  Date & Time - FIXED: Remove StringFormat  -->
                     <Grid Margin="0,0,0,20">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
@@ -74,8 +74,12 @@
                                 Margin="0,0,0,8"
                                 FontSize="13"
                                 FontWeight="Medium"
-                                Text="Heure de debut *" />
-                            <TextBox Style="{StaticResource ModernTextBox}" Text="{Binding StartTime, StringFormat='HH:mm'}" />
+                                Text="Heure de debut (HH:mm) *" />
+                            <!-- FIXED: Plain TextBox for time input -->
+                            <TextBox 
+                                Style="{StaticResource ModernTextBox}" 
+                                Text="{Binding StartTime, UpdateSourceTrigger=PropertyChanged}"
+                                MaxLength="5" />
                         </StackPanel>
                     </Grid>
 
@@ -100,8 +104,12 @@
                                 Margin="0,0,0,8"
                                 FontSize="13"
                                 FontWeight="Medium"
-                                Text="Heure de fin *" />
-                            <TextBox Style="{StaticResource ModernTextBox}" Text="{Binding EndTime, StringFormat='HH:mm'}" />
+                                Text="Heure de fin (HH:mm) *" />
+                            <!-- FIXED: Plain TextBox for time input -->
+                            <TextBox 
+                                Style="{StaticResource ModernTextBox}" 
+                                Text="{Binding EndTime, UpdateSourceTrigger=PropertyChanged}"
+                                MaxLength="5" />
                         </StackPanel>
                     </Grid>
 

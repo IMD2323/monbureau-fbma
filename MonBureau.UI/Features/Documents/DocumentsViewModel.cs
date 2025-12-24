@@ -278,7 +278,7 @@ namespace MonBureau.UI.Features.Documents
 
             try
             {
-                var dialog = new Views.Dialogs.CaseDialog(document.Case);
+                var dialog = new CaseDialog(document.Case);
                 dialog.ShowDialog();
             }
             catch (Exception ex)

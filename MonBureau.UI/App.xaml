@@ -32,6 +32,7 @@
                     <converters:DateFormatConverter x:Key="DateFormat" />
                     <converters:AmountFormatConverter x:Key="AmountFormat" />
                     <converters:GreaterThanOneConverter x:Key="GreaterThanOne" />
+                    <converters:LessThanConverter x:Key="LessThanConverter" />
 
                     <FontFamily x:Key="IconFont">Segoe MDL2 Assets</FontFamily>
                 </ResourceDictionary>

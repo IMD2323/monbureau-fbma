@@ -13,6 +13,9 @@ using MonBureau.UI.Features.Rdvs;
 
 namespace MonBureau.UI.Features.Rdvs
 {
+    /// <summary>
+    /// FIXED: Proper time handling for TimeSpan formatting
+    /// </summary>
     public partial class AppointmentDialogViewModel : ObservableObject
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -27,14 +30,16 @@ namespace MonBureau.UI.Features.Rdvs
         [ObservableProperty]
         private DateTime _startDate = DateTime.Today;
 
+        // FIXED: Use string for time input instead of TimeSpan with StringFormat
         [ObservableProperty]
-        private TimeSpan _startTime = new TimeSpan(9, 0, 0);
+        private string _startTime = "09:00";
 
         [ObservableProperty]
         private DateTime _endDate = DateTime.Today;
 
+        // FIXED: Use string for time input instead of TimeSpan with StringFormat
         [ObservableProperty]
-        private TimeSpan _endTime = new TimeSpan(10, 0, 0);
+        private string _endTime = "10:00";
 
         [ObservableProperty]
         private string? _location;
@@ -107,9 +112,15 @@ namespace MonBureau.UI.Features.Rdvs
             Title = _existingAppointment.Title;
             Description = _existingAppointment.Description;
             StartDate = _existingAppointment.StartTime.Date;
-            StartTime = _existingAppointment.StartTime.TimeOfDay;
+
+            // FIXED: Format TimeSpan as HH:mm string
+            StartTime = _existingAppointment.StartTime.ToString("HH:mm");
+
             EndDate = _existingAppointment.EndTime.Date;
-            EndTime = _existingAppointment.EndTime.TimeOfDay;
+
+            // FIXED: Format TimeSpan as HH:mm string
+            EndTime = _existingAppointment.EndTime.ToString("HH:mm");
+
             Location = _existingAppointment.Location;
             SelectedType = _existingAppointment.Type;
             SelectedStatus = _existingAppointment.Status;
@@ -123,8 +134,24 @@ namespace MonBureau.UI.Features.Rdvs
         [RelayCommand]
         private void SetQuickDuration(int minutes)
         {
-            EndDate = StartDate;
-            EndTime = StartTime.Add(TimeSpan.FromMinutes(minutes));
+            // FIXED: Parse start time and add minutes
+            if (TimeSpan.TryParse(StartTime, out var startTimeSpan))
+            {
+                var endTimeSpan = startTimeSpan.Add(TimeSpan.FromMinutes(minutes));
+
+                // Handle day overflow
+                if (endTimeSpan >= TimeSpan.FromDays(1))
+                {
+                    EndDate = StartDate.AddDays(1);
+                    endTimeSpan = endTimeSpan.Subtract(TimeSpan.FromDays(1));
+                }
+                else
+                {
+                    EndDate = StartDate;
+                }
+
+                EndTime = endTimeSpan.ToString(@"hh\:mm");
+            }
         }
 
         [RelayCommand]
@@ -145,8 +172,21 @@ namespace MonBureau.UI.Features.Rdvs
                 return;
             }
 
-            var startDateTime = StartDate.Date + StartTime;
-            var endDateTime = EndDate.Date + EndTime;
+            // FIXED: Parse time strings
+            if (!TimeSpan.TryParse(StartTime, out var startTimeSpan))
+            {
+                ValidationError = "Heure de début invalide (format: HH:mm)";
+                return;
+            }
+
+            if (!TimeSpan.TryParse(EndTime, out var endTimeSpan))
+            {
+                ValidationError = "Heure de fin invalide (format: HH:mm)";
+                return;
+            }
+
+            var startDateTime = StartDate.Date + startTimeSpan;
+            var endDateTime = EndDate.Date + endTimeSpan;
 
             if (endDateTime <= startDateTime)
             {

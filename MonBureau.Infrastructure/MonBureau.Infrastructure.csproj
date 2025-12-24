@@ -11,6 +11,10 @@ FIXED: Downgrade EF Core from 10.0.1 to 8.0.11 (compatible with .NET 8)
 
 	<ItemGroup>
 		<!-- HTTP Client for Firebase REST API -->
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.1">
+		  <PrivateAssets>all</PrivateAssets>
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
 		<PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
 
 		<!-- Database - FIXED: Use 8.0.11 instead of 10.0.1 -->

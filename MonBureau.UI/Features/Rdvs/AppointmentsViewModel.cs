@@ -17,9 +17,6 @@ using MonBureau.UI.Features.Rdvs;
 
 namespace MonBureau.UI.Features.Rdvs
 {
-    /// <summary>
-    /// FIXED: Properly inherits from CrudViewModelBase with dashboard statistics
-    /// </summary>
     public partial class AppointmentsViewModel : CrudViewModelBase<Appointment>
     {
         private readonly NotificationService _notificationService;
@@ -56,9 +53,6 @@ namespace MonBureau.UI.Features.Rdvs
         protected override IRepository<Appointment> GetRepository()
             => _unitOfWork.Appointments;
 
-        /// <summary>
-        /// FIXED: Database-level filtering for appointments
-        /// </summary>
         protected override Expression<Func<Appointment, bool>>? BuildFilterExpression(string searchText)
         {
             if (string.IsNullOrWhiteSpace(searchText))
@@ -76,9 +70,6 @@ namespace MonBureau.UI.Features.Rdvs
                      (a.Case.Client.LastName != null && a.Case.Client.LastName.ToLower().Contains(lowerSearch))));
         }
 
-        /// <summary>
-        /// FIXED: Load dashboard panels after base initialization
-        /// </summary>
         public override async Task InitializeAsync()
         {
             await base.InitializeAsync();
@@ -87,9 +78,6 @@ namespace MonBureau.UI.Features.Rdvs
             await CheckPendingRemindersAsync();
         }
 
-        /// <summary>
-        /// Load today's appointments with separate context
-        /// </summary>
         private async Task LoadTodayAppointmentsAsync()
         {
             try
@@ -122,9 +110,6 @@ namespace MonBureau.UI.Features.Rdvs
             }
         }
 
-        /// <summary>
-        /// Load upcoming appointments (next 7 days)
-        /// </summary>
         private async Task LoadUpcomingAppointmentsAsync()
         {
             try
@@ -157,9 +142,6 @@ namespace MonBureau.UI.Features.Rdvs
             }
         }
 
-        /// <summary>
-        /// Check and send pending reminders
-        /// </summary>
         private async Task CheckPendingRemindersAsync()
         {
             try
@@ -188,9 +170,6 @@ namespace MonBureau.UI.Features.Rdvs
             }
         }
 
-        /// <summary>
-        /// Send reminder notification
-        /// </summary>
         private async Task SendReminderAsync(Appointment appointment)
         {
             try
@@ -201,17 +180,20 @@ namespace MonBureau.UI.Features.Rdvs
                     NotificationType.Reminder
                 );
 
-                appointment.ReminderSentAt = DateTime.UtcNow;
-                await GetRepository().UpdateAsync(appointment);
-                await _unitOfWork.SaveChangesAsync();
+                // Load fresh entity to update
+                var appointmentToUpdate = await GetRepository().GetByIdAsync(appointment.Id);
+                if (appointmentToUpdate != null)
+                {
+                    appointmentToUpdate.ReminderSentAt = DateTime.UtcNow;
+                    await GetRepository().UpdateAsync(appointmentToUpdate);
+                    await _unitOfWork.SaveChangesAsync();
+                }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[AppointmentsViewModel] Error sending reminder: {ex.Message}");
             }
         }
-
-        #region Commands
 
         [RelayCommand]
         private async Task ChangeViewMode(string mode)
@@ -227,17 +209,22 @@ namespace MonBureau.UI.Features.Rdvs
 
             try
             {
-                appointment.Status = AppointmentStatus.Completed;
-                await GetRepository().UpdateAsync(appointment);
-                await _unitOfWork.SaveChangesAsync();
+                // Load fresh entity
+                var appointmentToUpdate = await GetRepository().GetByIdAsync(appointment.Id);
+                if (appointmentToUpdate != null)
+                {
+                    appointmentToUpdate.Status = AppointmentStatus.Completed;
+                    await GetRepository().UpdateAsync(appointmentToUpdate);
+                    await _unitOfWork.SaveChangesAsync();
 
-                await RefreshAsync();
+                    await RefreshAsync();
 
-                _notificationService.ShowNotification(
-                    "Rendez-vous Terminé",
-                    $"{appointment.Title} a été marqué comme terminé",
-                    NotificationType.Success
-                );
+                    _notificationService.ShowNotification(
+                        "Rendez-vous Terminé",
+                        $"{appointment.Title} a été marqué comme terminé",
+                        NotificationType.Success
+                    );
+                }
             }
             catch (Exception ex)
             {
@@ -245,23 +232,19 @@ namespace MonBureau.UI.Features.Rdvs
             }
         }
 
-        #endregion
-
-        /// <summary>
-        /// FIXED: Create dialog properly
-        /// </summary>
         protected override Window CreateAddDialog()
         {
             var dialog = new AppointmentDialog();
+            var viewModel = new AppointmentDialogViewModel(_unitOfWork);
+            dialog.DataContext = viewModel;
             return dialog;
         }
 
-        /// <summary>
-        /// FIXED: Create edit dialog with entity
-        /// </summary>
         protected override Window CreateEditDialog(Appointment entity)
         {
-            var dialog = new AppointmentDialog(entity);
+            var dialog = new AppointmentDialog();
+            var viewModel = new AppointmentDialogViewModel(_unitOfWork, entity);
+            dialog.DataContext = viewModel;
             return dialog;
         }
 
@@ -274,9 +257,6 @@ namespace MonBureau.UI.Features.Rdvs
         protected override string GetEntityDisplayName(Appointment entity)
             => $"{entity.Title} - {entity.StartTime:dd/MM/yyyy HH:mm}";
 
-        /// <summary>
-        /// FIXED: Refresh dashboard panels after CRUD operations
-        /// </summary>
         protected override async Task RefreshAsync()
         {
             await base.RefreshAsync();

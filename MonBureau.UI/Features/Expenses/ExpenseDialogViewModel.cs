@@ -12,18 +12,14 @@ using MonBureau.Core.Interfaces;
 
 namespace MonBureau.UI.Features.Expenses
 {
-    /// <summary>
-    /// FIXED: Proper decimal binding and validation
-    /// </summary>
     public partial class ExpenseDialogViewModel : ObservableObject
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly Expense? _existingExpense;
+        private int? _existingExpenseId;
 
         [ObservableProperty]
         private string _description = string.Empty;
 
-        // FIXED: Use string for amount to handle decimal input properly
         [ObservableProperty]
         private string _amountText = "0";
 
@@ -63,33 +59,43 @@ namespace MonBureau.UI.Features.Expenses
         [ObservableProperty]
         private string? _validationError;
 
-        public bool IsEditMode => _existingExpense != null;
+        public bool IsEditMode => _existingExpenseId.HasValue;
 
         public Array ExpenseCategories => Enum.GetValues(typeof(ExpenseCategory));
 
         public ExpenseDialogViewModel(IUnitOfWork unitOfWork, Expense? expense = null)
         {
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
-            _existingExpense = expense;
 
-            _ = LoadDataAsync();
+            if (expense != null)
+            {
+                _existingExpenseId = expense.Id;
+            }
+
+            _ = LoadDataAsync(expense);
         }
 
-        private async Task LoadDataAsync()
+        private async Task LoadDataAsync(Expense? expense)
         {
             try
             {
-                var cases = await _unitOfWork.Cases.GetPagedAsync(0, 1000);
-                var clients = await _unitOfWork.Clients.GetPagedAsync(0, 1000);
+                // Load cases and clients
+                var casesTask = _unitOfWork.Cases.GetPagedAsync(0, 1000);
+                var clientsTask = _unitOfWork.Clients.GetPagedAsync(0, 1000);
+
+                await Task.WhenAll(casesTask, clientsTask);
+
+                var cases = casesTask.Result;
+                var clients = clientsTask.Result;
 
                 await Application.Current.Dispatcher.InvokeAsync(() =>
                 {
                     Cases = new ObservableCollection<Case>(cases.OrderByDescending(c => c.OpeningDate));
                     Clients = new ObservableCollection<Client>(clients.OrderBy(c => c.FullName));
 
-                    if (_existingExpense != null)
+                    if (expense != null)
                     {
-                        LoadExpenseData();
+                        LoadExpenseData(expense);
                     }
                 });
             }
@@ -99,22 +105,26 @@ namespace MonBureau.UI.Features.Expenses
             }
         }
 
-        private void LoadExpenseData()
+        private void LoadExpenseData(Expense expense)
         {
-            if (_existingExpense == null) return;
+            Description = expense.Description;
+            AmountText = expense.Amount.ToString("F2");
+            Date = expense.Date;
+            SelectedCategory = expense.Category;
+            PaymentMethod = expense.PaymentMethod;
+            Recipient = expense.Recipient;
+            Notes = expense.Notes;
+            ReceiptPath = expense.ReceiptPath;
+            IsPaid = expense.IsPaid;
 
-            Description = _existingExpense.Description;
-            AmountText = _existingExpense.Amount.ToString("F2");
-            Date = _existingExpense.Date;
-            SelectedCategory = _existingExpense.Category;
-            PaymentMethod = _existingExpense.PaymentMethod;
-            Recipient = _existingExpense.Recipient;
-            Notes = _existingExpense.Notes;
-            ReceiptPath = _existingExpense.ReceiptPath;
-            IsPaid = _existingExpense.IsPaid;
+            // Find and select case
+            SelectedCase = Cases.FirstOrDefault(c => c.Id == expense.CaseId);
 
-            SelectedCase = Cases.FirstOrDefault(c => c.Id == _existingExpense.CaseId);
-            AddedByClient = Clients.FirstOrDefault(c => c.Id == _existingExpense.AddedByClientId);
+            // Find and select client
+            if (expense.AddedByClientId.HasValue)
+            {
+                AddedByClient = Clients.FirstOrDefault(c => c.Id == expense.AddedByClientId.Value);
+            }
         }
 
         [RelayCommand]
@@ -144,7 +154,6 @@ namespace MonBureau.UI.Features.Expenses
                 return;
             }
 
-            // FIXED: Parse amount from string
             if (!decimal.TryParse(AmountText, out var amount) || amount <= 0)
             {
                 ValidationError = "Le montant doit être un nombre valide supérieur à 0";
@@ -159,27 +168,37 @@ namespace MonBureau.UI.Features.Expenses
 
             try
             {
-                if (_existingExpense != null)
-                {
-                    // Update existing
-                    _existingExpense.Description = Description;
-                    _existingExpense.Amount = amount;
-                    _existingExpense.Date = Date;
-                    _existingExpense.Category = SelectedCategory;
-                    _existingExpense.PaymentMethod = PaymentMethod;
-                    _existingExpense.Recipient = Recipient;
-                    _existingExpense.Notes = Notes;
-                    _existingExpense.ReceiptPath = ReceiptPath;
-                    _existingExpense.IsPaid = IsPaid;
-                    _existingExpense.CaseId = SelectedCase.Id;
-                    _existingExpense.AddedByClientId = AddedByClient?.Id;
+                Expense expenseToSave;
 
-                    await _unitOfWork.Expenses.UpdateAsync(_existingExpense);
+                if (_existingExpenseId.HasValue)
+                {
+                    // Edit mode - load fresh entity
+                    expenseToSave = await _unitOfWork.Expenses.GetByIdAsync(_existingExpenseId.Value);
+                    if (expenseToSave == null)
+                    {
+                        ValidationError = "Dépense introuvable";
+                        return;
+                    }
+
+                    // Update properties
+                    expenseToSave.Description = Description;
+                    expenseToSave.Amount = amount;
+                    expenseToSave.Date = Date;
+                    expenseToSave.Category = SelectedCategory;
+                    expenseToSave.PaymentMethod = PaymentMethod;
+                    expenseToSave.Recipient = Recipient;
+                    expenseToSave.Notes = Notes;
+                    expenseToSave.ReceiptPath = ReceiptPath;
+                    expenseToSave.IsPaid = IsPaid;
+                    expenseToSave.CaseId = SelectedCase.Id;
+                    expenseToSave.AddedByClientId = AddedByClient?.Id;
+
+                    await _unitOfWork.Expenses.UpdateAsync(expenseToSave);
                 }
                 else
                 {
-                    // Create new
-                    var expense = new Expense
+                    // Create mode
+                    expenseToSave = new Expense
                     {
                         Description = Description,
                         Amount = amount,
@@ -194,10 +213,11 @@ namespace MonBureau.UI.Features.Expenses
                         AddedByClientId = AddedByClient?.Id
                     };
 
-                    await _unitOfWork.Expenses.AddAsync(expense);
+                    await _unitOfWork.Expenses.AddAsync(expenseToSave);
                 }
 
                 await _unitOfWork.SaveChangesAsync();
+
                 window.DialogResult = true;
                 window.Close();
             }
@@ -205,6 +225,7 @@ namespace MonBureau.UI.Features.Expenses
             {
                 ValidationError = $"Erreur: {ex.Message}";
                 System.Diagnostics.Debug.WriteLine($"[ExpenseDialog] Save error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[ExpenseDialog] Stack trace: {ex.StackTrace}");
             }
         }
 

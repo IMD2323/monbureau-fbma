@@ -11,13 +11,10 @@ using MonBureau.Core.Interfaces;
 
 namespace MonBureau.UI.Features.Rdvs
 {
-    /// <summary>
-    /// FIXED: String parameter for quick duration command
-    /// </summary>
     public partial class AppointmentDialogViewModel : ObservableObject
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly Appointment? _existingAppointment;
+        private int? _existingAppointmentId;
 
         [ObservableProperty]
         private string _title = string.Empty;
@@ -64,7 +61,7 @@ namespace MonBureau.UI.Features.Rdvs
         [ObservableProperty]
         private string? _validationError;
 
-        public bool IsEditMode => _existingAppointment != null;
+        public bool IsEditMode => _existingAppointmentId.HasValue;
 
         public Array AppointmentTypes => Enum.GetValues(typeof(AppointmentType));
         public Array AppointmentStatuses => Enum.GetValues(typeof(AppointmentStatus));
@@ -73,24 +70,28 @@ namespace MonBureau.UI.Features.Rdvs
         public AppointmentDialogViewModel(IUnitOfWork unitOfWork, Appointment? appointment = null)
         {
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
-            _existingAppointment = appointment;
-            _ = LoadDataAsync();
+
+            if (appointment != null)
+            {
+                _existingAppointmentId = appointment.Id;
+            }
+
+            _ = LoadDataAsync(appointment);
         }
 
-        private async Task LoadDataAsync()
+        private async Task LoadDataAsync(Appointment? appointment)
         {
             try
             {
-                // FIXED: Use GetPagedAsync instead of GetAllAsync
                 var cases = await _unitOfWork.Cases.GetPagedAsync(0, 1000);
 
                 await Application.Current.Dispatcher.InvokeAsync(() =>
                 {
                     Cases = new ObservableCollection<Case>(cases.OrderByDescending(c => c.OpeningDate));
 
-                    if (_existingAppointment != null)
+                    if (appointment != null)
                     {
-                        LoadAppointmentData();
+                        LoadAppointmentData(appointment);
                     }
                 });
             }
@@ -100,44 +101,37 @@ namespace MonBureau.UI.Features.Rdvs
             }
         }
 
-        private void LoadAppointmentData()
+        private void LoadAppointmentData(Appointment appointment)
         {
-            if (_existingAppointment == null) return;
+            Title = appointment.Title;
+            Description = appointment.Description;
+            StartDate = appointment.StartTime.Date;
+            StartTime = appointment.StartTime.ToString("HH:mm");
+            EndDate = appointment.EndTime.Date;
+            EndTime = appointment.EndTime.ToString("HH:mm");
+            Location = appointment.Location;
+            SelectedType = appointment.Type;
+            SelectedStatus = appointment.Status;
+            ReminderEnabled = appointment.ReminderEnabled;
+            ReminderMinutesBefore = appointment.ReminderMinutesBefore;
+            Attendees = appointment.Attendees;
 
-            Title = _existingAppointment.Title;
-            Description = _existingAppointment.Description;
-            StartDate = _existingAppointment.StartTime.Date;
-            StartTime = _existingAppointment.StartTime.ToString("HH:mm");
-            EndDate = _existingAppointment.EndTime.Date;
-            EndTime = _existingAppointment.EndTime.ToString("HH:mm");
-            Location = _existingAppointment.Location;
-            SelectedType = _existingAppointment.Type;
-            SelectedStatus = _existingAppointment.Status;
-            ReminderEnabled = _existingAppointment.ReminderEnabled;
-            ReminderMinutesBefore = _existingAppointment.ReminderMinutesBefore;
-            Attendees = _existingAppointment.Attendees;
-            SelectedCase = Cases.FirstOrDefault(c => c.Id == _existingAppointment.CaseId);
+            // Find and select case
+            SelectedCase = Cases.FirstOrDefault(c => c.Id == appointment.CaseId);
         }
 
-        /// <summary>
-        /// FIXED: Accept string parameter from XAML CommandParameter
-        /// </summary>
         [RelayCommand]
         private void SetQuickDuration(string minutesStr)
         {
-            // Parse string to int
             if (!int.TryParse(minutesStr, out int minutes))
             {
-                System.Diagnostics.Debug.WriteLine($"[AppointmentDialog] Invalid minutes: {minutesStr}");
                 return;
             }
 
-            // Parse start time and add minutes
             if (TimeSpan.TryParse(StartTime, out var startTimeSpan))
             {
                 var endTimeSpan = startTimeSpan.Add(TimeSpan.FromMinutes(minutes));
 
-                // Handle day overflow
                 if (endTimeSpan >= TimeSpan.FromDays(1))
                 {
                     EndDate = StartDate.AddDays(1);
@@ -198,25 +192,37 @@ namespace MonBureau.UI.Features.Rdvs
 
             try
             {
-                if (_existingAppointment != null)
-                {
-                    _existingAppointment.Title = Title;
-                    _existingAppointment.Description = Description;
-                    _existingAppointment.StartTime = startDateTime;
-                    _existingAppointment.EndTime = endDateTime;
-                    _existingAppointment.Location = Location;
-                    _existingAppointment.Type = SelectedType;
-                    _existingAppointment.Status = SelectedStatus;
-                    _existingAppointment.ReminderEnabled = ReminderEnabled;
-                    _existingAppointment.ReminderMinutesBefore = ReminderMinutesBefore;
-                    _existingAppointment.Attendees = Attendees;
-                    _existingAppointment.CaseId = SelectedCase.Id;
+                Appointment appointmentToSave;
 
-                    await _unitOfWork.Appointments.UpdateAsync(_existingAppointment);
+                if (_existingAppointmentId.HasValue)
+                {
+                    // Edit mode - load fresh entity
+                    appointmentToSave = await _unitOfWork.Appointments.GetByIdAsync(_existingAppointmentId.Value);
+                    if (appointmentToSave == null)
+                    {
+                        ValidationError = "Rendez-vous introuvable";
+                        return;
+                    }
+
+                    // Update properties
+                    appointmentToSave.Title = Title;
+                    appointmentToSave.Description = Description;
+                    appointmentToSave.StartTime = startDateTime;
+                    appointmentToSave.EndTime = endDateTime;
+                    appointmentToSave.Location = Location;
+                    appointmentToSave.Type = SelectedType;
+                    appointmentToSave.Status = SelectedStatus;
+                    appointmentToSave.ReminderEnabled = ReminderEnabled;
+                    appointmentToSave.ReminderMinutesBefore = ReminderMinutesBefore;
+                    appointmentToSave.Attendees = Attendees;
+                    appointmentToSave.CaseId = SelectedCase.Id;
+
+                    await _unitOfWork.Appointments.UpdateAsync(appointmentToSave);
                 }
                 else
                 {
-                    var appointment = new Appointment
+                    // Create mode
+                    appointmentToSave = new Appointment
                     {
                         Title = Title,
                         Description = Description,
@@ -231,10 +237,11 @@ namespace MonBureau.UI.Features.Rdvs
                         CaseId = SelectedCase.Id
                     };
 
-                    await _unitOfWork.Appointments.AddAsync(appointment);
+                    await _unitOfWork.Appointments.AddAsync(appointmentToSave);
                 }
 
                 await _unitOfWork.SaveChangesAsync();
+
                 window.DialogResult = true;
                 window.Close();
             }
@@ -242,6 +249,7 @@ namespace MonBureau.UI.Features.Rdvs
             {
                 ValidationError = $"Erreur: {ex.Message}";
                 System.Diagnostics.Debug.WriteLine($"[AppointmentDialog] Save error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[AppointmentDialog] Stack trace: {ex.StackTrace}");
             }
         }
 

@@ -382,7 +382,7 @@ namespace MonBureau.UI
             services.AddSingleton<CacheService>();
             services.AddSingleton<NotificationService>();
             services.AddSingleton<AutoBackupService>();
-
+         
             services.AddScoped<ICaseService, CaseService>();
 
             services.AddTransient<MainViewModel>();

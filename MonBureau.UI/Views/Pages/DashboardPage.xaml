@@ -243,13 +243,7 @@
                                 Padding="20,12"
                                 Command="{Binding AddCaseCommand}"
                                 Content="+ Nouveau Dossier"
-                                Style="{StaticResource SecondaryButton}" />
-
-                            <Button
-                                Padding="20,12"
-                                Command="{Binding AddItemCommand}"
-                                Content="+ Nouvel Élément"
-                                Style="{StaticResource OutlineButton}" />
+                                Style="{StaticResource SecondaryButton}" />                            
                         </StackPanel>
                     </StackPanel>
                 </Border>

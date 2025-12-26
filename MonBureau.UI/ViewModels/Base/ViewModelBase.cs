@@ -9,5 +9,8 @@ namespace MonBureau.UI.ViewModels.Base
 
         [ObservableProperty]
         private string _busyMessage = string.Empty;
+
+        [ObservableProperty]
+        private string _statusMessage = string.Empty;
     }
 }

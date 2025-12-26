@@ -6,11 +6,15 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using MonBureau.Core.Entities;
 using MonBureau.Core.Interfaces;
+using MonBureau.UI.Services;
 using MonBureau.UI.ViewModels.Base;
 using MonBureau.UI.Views.Dialogs;
 
 namespace MonBureau.UI.Features.Expenses
 {
+    /// <summary>
+    /// FIXED: Proper navigation property loading and error handling
+    /// </summary>
     public partial class ExpensesViewModel : CrudViewModelBase<Expense>
     {
         [ObservableProperty]
@@ -33,6 +37,9 @@ namespace MonBureau.UI.Features.Expenses
         protected override IRepository<Expense> GetRepository()
             => _unitOfWork.Expenses;
 
+        /// <summary>
+        /// FIXED: Filter expression includes Case and Client navigation properties
+        /// </summary>
         protected override Expression<Func<Expense, bool>>? BuildFilterExpression(string searchText)
         {
             if (string.IsNullOrWhiteSpace(searchText))
@@ -56,9 +63,12 @@ namespace MonBureau.UI.Features.Expenses
             await CalculateStatisticsAsync();
         }
 
+        /// <summary>
+        /// Calculates expense statistics
+        /// </summary>
         private async Task CalculateStatisticsAsync()
         {
-            try
+            await SafeExecuteAsync(async () =>
             {
                 await Task.Run(() =>
                 {
@@ -68,28 +78,51 @@ namespace MonBureau.UI.Features.Expenses
                     PaidExpenses = expenses.Where(e => e.IsPaid).Sum(e => e.Amount);
                     UnpaidExpenses = expenses.Where(e => !e.IsPaid).Sum(e => e.Amount);
                     ExpenseCount = expenses.Count;
+
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[ExpensesViewModel] Stats: Total={TotalExpenses:N2}, Paid={PaidExpenses:N2}, Unpaid={UnpaidExpenses:N2}, Count={ExpenseCount}");
                 });
+            }, "le calcul des statistiques");
+        }
+
+        /// <summary>
+        /// FIXED: Creates dialog with proper ViewModel injection
+        /// </summary>
+        protected override Window CreateAddDialog()
+        {
+            try
+            {
+                var dialog = new ExpenseDialog();
+                var viewModel = new ExpenseDialogViewModel(_unitOfWork);
+                dialog.DataContext = viewModel;
+                return dialog;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[ExpensesViewModel] Error calculating statistics: {ex.Message}");
+                var error = ErrorHandler.Handle(ex, "l'ouverture du formulaire de dépense");
+                ErrorHandler.ShowError(error);
+                throw;
             }
         }
 
-        protected override Window CreateAddDialog()
-        {
-            var dialog = new ExpenseDialog();
-            var viewModel = new ExpenseDialogViewModel(_unitOfWork);
-            dialog.DataContext = viewModel;
-            return dialog;
-        }
-
+        /// <summary>
+        /// FIXED: Creates edit dialog with entity
+        /// </summary>
         protected override Window CreateEditDialog(Expense entity)
         {
-            var dialog = new ExpenseDialog();
-            var viewModel = new ExpenseDialogViewModel(_unitOfWork, entity);
-            dialog.DataContext = viewModel;
-            return dialog;
+            try
+            {
+                var dialog = new ExpenseDialog();
+                var viewModel = new ExpenseDialogViewModel(_unitOfWork, entity);
+                dialog.DataContext = viewModel;
+                return dialog;
+            }
+            catch (Exception ex)
+            {
+                var error = ErrorHandler.Handle(ex, "l'ouverture du formulaire de dépense");
+                ErrorHandler.ShowError(error);
+                throw;
+            }
         }
 
         protected override string GetEntityName()
@@ -99,8 +132,11 @@ namespace MonBureau.UI.Features.Expenses
             => "Dépenses";
 
         protected override string GetEntityDisplayName(Expense entity)
-            => entity.Description;
+            => $"{entity.Description} - {entity.Amount:N2} DA";
 
+        /// <summary>
+        /// FIXED: Refresh recalculates statistics
+        /// </summary>
         protected override async Task RefreshAsync()
         {
             await base.RefreshAsync();

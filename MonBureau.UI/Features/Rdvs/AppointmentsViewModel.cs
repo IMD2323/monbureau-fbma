@@ -106,7 +106,8 @@ namespace MonBureau.UI.Features.Rdvs
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[AppointmentsViewModel] Error loading today: {ex.Message}");
+                var error = ErrorHandler.Handle(ex, "le chargement des rendez-vous d'aujourd'hui");
+                ErrorHandler.ShowError(error);
             }
         }
 
@@ -138,7 +139,8 @@ namespace MonBureau.UI.Features.Rdvs
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[AppointmentsViewModel] Error loading upcoming: {ex.Message}");
+                var error = ErrorHandler.Handle(ex, "le chargement des rendez-vous à venir");
+                ErrorHandler.ShowError(error);
             }
         }
 
@@ -166,7 +168,8 @@ namespace MonBureau.UI.Features.Rdvs
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[AppointmentsViewModel] Error checking reminders: {ex.Message}");
+                var error = ErrorHandler.Handle(ex, "la vérification des rappels");
+                ErrorHandler.ShowError(error);
             }
         }
 
@@ -191,7 +194,8 @@ namespace MonBureau.UI.Features.Rdvs
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[AppointmentsViewModel] Error sending reminder: {ex.Message}");
+                var error = ErrorHandler.Handle(ex, "l'envoi du rappel");
+                ErrorHandler.ShowError(error);
             }
         }
 
@@ -207,7 +211,7 @@ namespace MonBureau.UI.Features.Rdvs
         {
             if (appointment == null) return;
 
-            try
+            await SafeExecuteAsync(async () =>
             {
                 // Load fresh entity
                 var appointmentToUpdate = await GetRepository().GetByIdAsync(appointment.Id);
@@ -225,11 +229,7 @@ namespace MonBureau.UI.Features.Rdvs
                         NotificationType.Success
                     );
                 }
-            }
-            catch (Exception ex)
-            {
-                ShowError($"Erreur: {ex.Message}");
-            }
+            }, "marquer le rendez-vous comme terminé");
         }
 
         protected override Window CreateAddDialog()

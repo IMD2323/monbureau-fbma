@@ -7,11 +7,12 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MonBureau.Core.Interfaces;
+using MonBureau.UI.Services;
 
 namespace MonBureau.UI.ViewModels.Base
 {
     /// <summary>
-    /// FIXED: Proper entity deletion without tracking conflicts
+    /// FIXED: Complete error handling for all CRUD operations
     /// </summary>
     public abstract partial class CrudViewModelBase<TEntity> : ViewModelBase, IDisposable
         where TEntity : class
@@ -69,18 +70,22 @@ namespace MonBureau.UI.ViewModels.Base
 
             IsBusy = true;
             BusyMessage = $"Chargement {GetEntityPluralName()}...";
+            StatusMessage = string.Empty;
 
             try
             {
                 await LoadPageAsync(_loadCancellation.Token);
+                StatusMessage = $"{TotalItems} {GetEntityPluralName()} chargé(s)";
             }
             catch (OperationCanceledException)
             {
-                // Cancelled, ignore
+                StatusMessage = "Chargement annulé";
             }
             catch (Exception ex)
             {
-                ShowError($"Erreur: {ex.Message}");
+                var error = ErrorHandler.Handle(ex, $"le chargement des {GetEntityPluralName()}");
+                ErrorHandler.ShowError(error);
+                StatusMessage = "Erreur de chargement";
             }
             finally
             {
@@ -118,12 +123,14 @@ namespace MonBureau.UI.ViewModels.Base
         partial void OnSearchFilterChanged(string value)
         {
             CurrentPage = 1;
-            _ = LoadPageAsync(new CancellationToken());
+            _ = SafeExecuteAsync(async () => await LoadPageAsync(new CancellationToken()),
+                "la recherche");
         }
 
         partial void OnCurrentPageChanged(int value)
         {
-            _ = LoadPageAsync(new CancellationToken());
+            _ = SafeExecuteAsync(async () => await LoadPageAsync(new CancellationToken()),
+                "le changement de page");
         }
 
         protected abstract Expression<Func<TEntity, bool>>? BuildFilterExpression(string searchText);
@@ -133,7 +140,7 @@ namespace MonBureau.UI.ViewModels.Base
         {
             if (_disposed) return;
 
-            try
+            await SafeExecuteAsync(async () =>
             {
                 var dialog = CreateAddDialog();
                 var result = ShowDialog(dialog);
@@ -141,13 +148,10 @@ namespace MonBureau.UI.ViewModels.Base
                 if (result == true)
                 {
                     await RefreshAsync();
-                    ShowSuccess($"{GetEntityName()} ajouté!");
+                    ErrorHandler.ShowSuccess($"{GetEntityName()} ajouté avec succès!");
+                    StatusMessage = $"{GetEntityName()} ajouté";
                 }
-            }
-            catch (Exception ex)
-            {
-                ShowError($"Erreur: {ex.Message}");
-            }
+            }, $"l'ajout de {GetEntityName()}");
         }
 
         [RelayCommand]
@@ -155,7 +159,7 @@ namespace MonBureau.UI.ViewModels.Base
         {
             if (_disposed || entity == null) return;
 
-            try
+            await SafeExecuteAsync(async () =>
             {
                 var dialog = CreateEditDialog(entity);
                 var result = ShowDialog(dialog);
@@ -163,13 +167,10 @@ namespace MonBureau.UI.ViewModels.Base
                 if (result == true)
                 {
                     await RefreshAsync();
-                    ShowSuccess($"{GetEntityName()} modifié!");
+                    ErrorHandler.ShowSuccess($"{GetEntityName()} modifié avec succès!");
+                    StatusMessage = $"{GetEntityName()} modifié";
                 }
-            }
-            catch (Exception ex)
-            {
-                ShowError($"Erreur: {ex.Message}");
-            }
+            }, $"la modification de {GetEntityName()}");
         }
 
         [RelayCommand]
@@ -177,26 +178,27 @@ namespace MonBureau.UI.ViewModels.Base
         {
             if (_disposed || entity == null) return;
 
-            var confirmed = MessageBox.Show(
-                $"Supprimer {GetEntityDisplayName(entity)}?",
-                "Confirmation",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning
-            );
+            var displayName = GetEntityDisplayName(entity);
 
-            if (confirmed != MessageBoxResult.Yes) return;
+            var confirmed = ErrorHandler.Confirm(
+                $"Êtes-vous sûr de vouloir supprimer {displayName}?\n\n" +
+                "Cette action est irréversible.",
+                "Confirmer la suppression");
 
-            IsBusy = true;
+            if (!confirmed) return;
 
-            try
+            await SafeExecuteAsync(async () =>
             {
-                // Get the entity ID before deletion
+                IsBusy = true;
+                BusyMessage = "Suppression en cours...";
+
+                // Get the entity ID
                 var idProperty = typeof(TEntity).GetProperty("Id");
                 var entityId = (int)(idProperty?.GetValue(entity) ?? 0);
 
                 if (entityId > 0)
                 {
-                    // Load fresh entity from database
+                    // Load fresh entity from database to avoid tracking conflicts
                     var entityToDelete = await GetRepository().GetByIdAsync(entityId);
 
                     if (entityToDelete != null)
@@ -204,28 +206,23 @@ namespace MonBureau.UI.ViewModels.Base
                         await GetRepository().DeleteAsync(entityToDelete);
                         await _unitOfWork.SaveChangesAsync();
                         await RefreshAsync();
-                        ShowSuccess("Supprimé avec succès");
+
+                        ErrorHandler.ShowSuccess($"{GetEntityName()} supprimé avec succès!");
+                        StatusMessage = $"{GetEntityName()} supprimé";
                     }
                     else
                     {
-                        ShowError("Élément introuvable");
+                        ErrorHandler.ShowWarning("Élément introuvable. Il a peut-être déjà été supprimé.");
+                        await RefreshAsync();
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                ShowError($"Erreur: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"[CrudViewModel] Delete error: {ex.Message}");
-            }
-            finally
-            {
-                IsBusy = false;
-            }
+            }, $"la suppression de {GetEntityName()}");
         }
 
         [RelayCommand]
         protected virtual async Task RefreshAsync()
         {
+            StatusMessage = "Actualisation...";
             await InitializeAsync();
         }
 
@@ -243,6 +240,29 @@ namespace MonBureau.UI.ViewModels.Base
                 CurrentPage--;
         }
 
+        /// <summary>
+        /// Safe execution wrapper with error handling
+        /// </summary>
+        protected async Task SafeExecuteAsync(Func<Task> action, string operationName)
+        {
+            if (_disposed) return;
+
+            try
+            {
+                await action();
+            }
+            catch (Exception ex)
+            {
+                var error = ErrorHandler.Handle(ex, operationName);
+                ErrorHandler.ShowError(error);
+                StatusMessage = $"Erreur : {operationName}";
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
         protected abstract IRepository<TEntity> GetRepository();
         protected abstract Window CreateAddDialog();
         protected abstract Window CreateEditDialog(TEntity entity);
@@ -251,15 +271,5 @@ namespace MonBureau.UI.ViewModels.Base
         protected abstract string GetEntityDisplayName(TEntity entity);
 
         protected bool? ShowDialog(Window dialog) => dialog.ShowDialog();
-
-        protected virtual void ShowSuccess(string message)
-        {
-            MessageBox.Show(message, "Succès", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        protected virtual void ShowError(string message)
-        {
-            MessageBox.Show(message, "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
     }
 }

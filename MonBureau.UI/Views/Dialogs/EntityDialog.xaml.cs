@@ -8,12 +8,13 @@ using MonBureau.Core.Enums;
 using MonBureau.Core.Interfaces;
 using MonBureau.Core.Validation;
 using MonBureau.Core.Validators;
+using MonBureau.UI.Services;
 using ValidationResult = MonBureau.Core.Validation.ValidationResult;
 
 namespace MonBureau.UI.Views.Dialogs
 {
     /// <summary>
-    /// FIXED: Proper control type handling for DatePicker vs TextBox
+    /// FIXED: Complete error handling for entity dialogs
     /// </summary>
     public partial class EntityDialog : Window
     {
@@ -56,23 +57,32 @@ namespace MonBureau.UI.Views.Dialogs
 
         private void InitializeForm()
         {
-            Title = _entity is { } && GetEntityId() > 0
-                ? $"Modifier {GetEntityDisplayName()}"
-                : $"Nouveau {GetEntityDisplayName()}";
-
-            TitleText.Text = Title;
-
-            switch (_entityType)
+            try
             {
-                case "Client":
-                    BuildClientForm();
-                    break;
-                case "Case":
-                    BuildCaseForm();
-                    break;
-                case "CaseItem":
-                    BuildItemForm();
-                    break;
+                Title = _entity is { } && GetEntityId() > 0
+                    ? $"Modifier {GetEntityDisplayName()}"
+                    : $"Nouveau {GetEntityDisplayName()}";
+
+                TitleText.Text = Title;
+
+                switch (_entityType)
+                {
+                    case "Client":
+                        BuildClientForm();
+                        break;
+                    case "Case":
+                        BuildCaseForm();
+                        break;
+                    case "CaseItem":
+                        BuildItemForm();
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                var error = ErrorHandler.Handle(ex, "l'initialisation du formulaire");
+                ErrorHandler.ShowError(error);
+                Close();
             }
         }
 
@@ -183,7 +193,7 @@ namespace MonBureau.UI.Views.Dialogs
             {
                 Name = name,
                 SelectedDate = value,
-                Padding = new Thickness(12, 10, 12, 10), // Fixed the issue by providing all four parameters  
+                Padding = new Thickness(12, 10, 12, 10),
                 FontSize = 14,
                 BorderBrush = (System.Windows.Media.Brush)FindResource("BorderBrush"),
                 BorderThickness = new Thickness(1)
@@ -214,7 +224,7 @@ namespace MonBureau.UI.Views.Dialogs
                 Name = name,
                 ItemsSource = items,
                 SelectedIndex = selectedIndex,
-                Padding = new Thickness(12, 10, 12, 10), // Fixed the issue by providing all four parameters  
+                Padding = new Thickness(12, 10, 12, 10),
                 FontSize = 14,
                 BorderBrush = (System.Windows.Media.Brush)FindResource("BorderBrush"),
                 BorderThickness = new Thickness(1)
@@ -229,72 +239,102 @@ namespace MonBureau.UI.Views.Dialogs
 
         private void AddClientSelector(string name, string label, int selectedClientId)
         {
-            var stack = new StackPanel { Margin = new Thickness(0, 0, 0, 16) };
-
-            var labelBlock = new TextBlock
+            try
             {
-                Text = label,
-                FontSize = 13,
-                FontWeight = FontWeights.SemiBold,
-                Margin = new Thickness(0, 0, 0, 8),
-                Foreground = (System.Windows.Media.Brush)FindResource("TextPrimaryBrush")
-            };
+                var stack = new StackPanel { Margin = new Thickness(0, 0, 0, 16) };
 
-            var clients = _unitOfWork.Clients.GetAllAsync().Result.ToList();
+                var labelBlock = new TextBlock
+                {
+                    Text = label,
+                    FontSize = 13,
+                    FontWeight = FontWeights.SemiBold,
+                    Margin = new Thickness(0, 0, 0, 8),
+                    Foreground = (System.Windows.Media.Brush)FindResource("TextPrimaryBrush")
+                };
 
-            var comboBox = new ComboBox
+                var clients = _unitOfWork.Clients.GetAllAsync().Result.ToList();
+
+                if (clients.Count == 0)
+                {
+                    ErrorHandler.ShowWarning(
+                        "Aucun client disponible.\n\n" +
+                        "Veuillez d'abord créer un client avant d'ajouter un dossier.");
+                }
+
+                var comboBox = new ComboBox
+                {
+                    Name = name,
+                    ItemsSource = clients,
+                    DisplayMemberPath = "FullName",
+                    SelectedValuePath = "Id",
+                    SelectedValue = selectedClientId,
+                    Padding = new Thickness(12, 10, 12, 10),
+                    FontSize = 14,
+                    BorderBrush = (System.Windows.Media.Brush)FindResource("BorderBrush"),
+                    BorderThickness = new Thickness(1)
+                };
+
+                _controls[name] = comboBox;
+
+                stack.Children.Add(labelBlock);
+                stack.Children.Add(comboBox);
+                FormContainer.Children.Add(stack);
+            }
+            catch (Exception ex)
             {
-                Name = name,
-                ItemsSource = clients,
-                DisplayMemberPath = "FullName",
-                SelectedValuePath = "Id",
-                SelectedValue = selectedClientId,
-                Padding = new Thickness(12, 10, 12, 10), // Fixed the issue by providing all four parameters  
-                FontSize = 14,
-                BorderBrush = (System.Windows.Media.Brush)FindResource("BorderBrush"),
-                BorderThickness = new Thickness(1)
-            };
-
-            _controls[name] = comboBox;
-
-            stack.Children.Add(labelBlock);
-            stack.Children.Add(comboBox);
-            FormContainer.Children.Add(stack);
+                var error = ErrorHandler.Handle(ex, "le chargement des clients");
+                ErrorHandler.ShowError(error);
+            }
         }
 
         private void AddCaseSelector(string name, string label, int selectedCaseId)
         {
-            var stack = new StackPanel { Margin = new Thickness(0, 0, 0, 16) };
-
-            var labelBlock = new TextBlock
+            try
             {
-                Text = label,
-                FontSize = 13,
-                FontWeight = FontWeights.SemiBold,
-                Margin = new Thickness(0, 0, 0, 8),
-                Foreground = (System.Windows.Media.Brush)FindResource("TextPrimaryBrush")
-            };
+                var stack = new StackPanel { Margin = new Thickness(0, 0, 0, 16) };
 
-            var cases = _unitOfWork.Cases.GetAllAsync().Result.ToList();
+                var labelBlock = new TextBlock
+                {
+                    Text = label,
+                    FontSize = 13,
+                    FontWeight = FontWeights.SemiBold,
+                    Margin = new Thickness(0, 0, 0, 8),
+                    Foreground = (System.Windows.Media.Brush)FindResource("TextPrimaryBrush")
+                };
 
-            var comboBox = new ComboBox
+                var cases = _unitOfWork.Cases.GetAllAsync().Result.ToList();
+
+                if (cases.Count == 0)
+                {
+                    ErrorHandler.ShowWarning(
+                        "Aucun dossier disponible.\n\n" +
+                        "Veuillez d'abord créer un dossier.");
+                }
+
+                var comboBox = new ComboBox
+                {
+                    Name = name,
+                    ItemsSource = cases,
+                    DisplayMemberPath = "Number",
+                    SelectedValuePath = "Id",
+                    SelectedValue = selectedCaseId,
+                    Padding = new Thickness(12, 10, 12, 10),
+                    FontSize = 14,
+                    BorderBrush = (System.Windows.Media.Brush)FindResource("BorderBrush"),
+                    BorderThickness = new Thickness(1)
+                };
+
+                _controls[name] = comboBox;
+
+                stack.Children.Add(labelBlock);
+                stack.Children.Add(comboBox);
+                FormContainer.Children.Add(stack);
+            }
+            catch (Exception ex)
             {
-                Name = name,
-                ItemsSource = cases,
-                DisplayMemberPath = "Number",
-                SelectedValuePath = "Id",
-                SelectedValue = selectedCaseId,
-                Padding = new Thickness(12, 10, 12, 10), // Fixed the issue by providing all four parameters  
-                FontSize = 14,
-                BorderBrush = (System.Windows.Media.Brush)FindResource("BorderBrush"),
-                BorderThickness = new Thickness(1)
-            };
-
-            _controls[name] = comboBox;
-
-            stack.Children.Add(labelBlock);
-            stack.Children.Add(comboBox);
-            FormContainer.Children.Add(stack);
+                var error = ErrorHandler.Handle(ex, "le chargement des dossiers");
+                ErrorHandler.ShowError(error);
+            }
         }
 
         #endregion
@@ -324,12 +364,10 @@ namespace MonBureau.UI.Views.Dialogs
                 var entityId = GetEntityId();
                 if (entityId == 0)
                 {
-                    // Add new
                     await AddEntityAsync();
                 }
                 else
                 {
-                    // Update existing
                     await UpdateEntityAsync();
                 }
 
@@ -341,11 +379,8 @@ namespace MonBureau.UI.Views.Dialogs
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
-                    $"Erreur lors de la sauvegarde: {ex.Message}",
-                    "Erreur",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                var error = ErrorHandler.Handle(ex, "la sauvegarde");
+                ErrorHandler.ShowDetailedError(error);
                 SaveButton.IsEnabled = true;
             }
         }
@@ -453,11 +488,8 @@ namespace MonBureau.UI.Views.Dialogs
 
         #endregion
 
-        #region Helpers - FIXED to handle DatePicker correctly
+        #region Helpers
 
-        /// <summary>
-        /// FIXED: Get text value from TextBox only
-        /// </summary>
         private string GetTextValue(string name)
         {
             if (_controls.TryGetValue(name, out var control))
@@ -470,9 +502,6 @@ namespace MonBureau.UI.Views.Dialogs
             return string.Empty;
         }
 
-        /// <summary>
-        /// FIXED: Get date value from DatePicker only
-        /// </summary>
         private DateTime? GetDateValue(string name)
         {
             if (_controls.TryGetValue(name, out var control))
@@ -525,14 +554,13 @@ namespace MonBureau.UI.Views.Dialogs
 
         private void ShowValidationErrors(ValidationResult result)
         {
-            var errors = string.Join("\n", result.GetAllErrors());
-            ErrorMessageText.Text = errors;
+            var errors = string.Join("\n• ", result.GetAllErrors());
+            ErrorMessageText.Text = $"Veuillez corriger les erreurs suivantes :\n\n• {errors}";
 
-            // Find the error border in XAML and make it visible
-            var errorBorder = this.FindName("ErrorMessageText") as TextBlock;
-            if (errorBorder?.Parent is Border border)
+            var errorBorder = ErrorMessageText.Parent as Border;
+            if (errorBorder != null)
             {
-                border.Visibility = Visibility.Visible;
+                errorBorder.Visibility = Visibility.Visible;
             }
         }
 

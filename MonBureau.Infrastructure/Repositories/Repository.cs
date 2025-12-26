@@ -5,12 +5,13 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using MonBureau.Core.Interfaces;
+using MonBureau.Core.Entities;
 using MonBureau.Infrastructure.Data;
 
 namespace MonBureau.Infrastructure.Repositories
 {
     /// <summary>
-    /// FIXED: Complete rewrite to prevent all tracking conflicts
+    /// FIXED: Strongly-typed includes for proper navigation property loading
     /// </summary>
     public class Repository<T> : IRepository<T> where T : class
     {
@@ -25,16 +26,8 @@ namespace MonBureau.Infrastructure.Repositories
 
         public virtual async Task<T?> GetByIdAsync(int id)
         {
-            // Load with tracking for updates
-            var query = ApplyIncludes(_dbSet);
+            var query = ApplyIncludes(_dbSet.AsNoTracking());
             var entity = await query.FirstOrDefaultAsync(e => EF.Property<int>(e, "Id") == id);
-
-            if (entity != null)
-            {
-                // Detach to prevent tracking issues
-                _context.Entry(entity).State = EntityState.Detached;
-            }
-
             return entity;
         }
 
@@ -76,10 +69,7 @@ namespace MonBureau.Infrastructure.Repositories
         public virtual async Task<T> AddAsync(T entity)
         {
             if (entity == null) throw new ArgumentNullException(nameof(entity));
-
-            // Clear any tracked entities with same ID
             ClearTrackedEntity(entity);
-
             await _dbSet.AddAsync(entity);
             return entity;
         }
@@ -88,8 +78,32 @@ namespace MonBureau.Infrastructure.Repositories
         {
             if (entity == null) throw new ArgumentNullException(nameof(entity));
 
-            // Clear any tracked entities
-            ClearTrackedEntity(entity);
+            // CRITICAL FIX: Clear ALL tracked entities of this type
+            var trackedEntities = _context.ChangeTracker.Entries<T>()
+                .Where(e => e.State != EntityState.Detached)
+                .ToList();
+
+            foreach (var tracked in trackedEntities)
+            {
+                tracked.State = EntityState.Detached;
+            }
+
+            // Also clear any related entities that might be tracked
+            var allTrackedEntities = _context.ChangeTracker.Entries()
+                .Where(e => e.State != EntityState.Detached)
+                .ToList();
+
+            foreach (var tracked in allTrackedEntities)
+            {
+                // Don't detach the entity we're about to update
+                var trackedId = GetEntityIdGeneric(tracked.Entity);
+                var entityId = GetEntityId(entity);
+
+                if (tracked.Entity.GetType() != typeof(T) || trackedId != entityId)
+                {
+                    tracked.State = EntityState.Detached;
+                }
+            }
 
             // Attach and mark as modified
             _dbSet.Attach(entity);
@@ -98,17 +112,22 @@ namespace MonBureau.Infrastructure.Repositories
             await Task.CompletedTask;
         }
 
+        private int GetEntityIdGeneric(object entity)
+        {
+            var idProperty = entity.GetType().GetProperty("Id");
+            if (idProperty != null)
+            {
+                return (int)(idProperty.GetValue(entity) ?? 0);
+            }
+            return 0;
+        }
+
         public virtual Task DeleteAsync(T entity)
         {
             if (entity == null) throw new ArgumentNullException(nameof(entity));
-
-            // Clear any tracked entities
             ClearTrackedEntity(entity);
-
-            // Attach and mark for deletion
             _dbSet.Attach(entity);
             _dbSet.Remove(entity);
-
             return Task.CompletedTask;
         }
 
@@ -123,13 +142,9 @@ namespace MonBureau.Infrastructure.Repositories
             {
                 return await CountAsync();
             }
-
             return await _dbSet.AsNoTracking().Where(filter).CountAsync();
         }
 
-        /// <summary>
-        /// Clears any tracked entity with the same ID
-        /// </summary>
         private void ClearTrackedEntity(T entity)
         {
             var entityId = GetEntityId(entity);
@@ -144,9 +159,6 @@ namespace MonBureau.Infrastructure.Repositories
             }
         }
 
-        /// <summary>
-        /// Gets entity ID using reflection
-        /// </summary>
         private int GetEntityId(T entity)
         {
             var idProperty = typeof(T).GetProperty("Id");
@@ -158,36 +170,56 @@ namespace MonBureau.Infrastructure.Repositories
         }
 
         /// <summary>
-        /// Applies appropriate includes based on entity type
+        /// FIXED: Strongly-typed includes using lambda expressions
+        /// This ensures navigation properties are properly loaded
         /// </summary>
         protected virtual IQueryable<T> ApplyIncludes(IQueryable<T> query)
         {
-            var entityType = typeof(T).Name;
+            var entityType = typeof(T);
 
-            return entityType switch
+            // Case entity - include Client
+            if (entityType == typeof(Case))
             {
-                "Case" => query.Include("Client"),
+                return (IQueryable<T>)((IQueryable<Case>)query)
+                    .Include(c => c.Client);
+            }
 
-                "CaseItem" => query
-                    .Include("Case")
-                    .Include("Case.Client"),
+            // CaseItem entity - include Case and Case.Client
+            if (entityType == typeof(CaseItem))
+            {
+                return (IQueryable<T>)((IQueryable<CaseItem>)query)
+                    .Include(ci => ci.Case)
+                    .ThenInclude(c => c.Client);
+            }
 
-                "Expense" => query
-                    .Include("Case")
-                    .Include("Case.Client")
-                    .Include("AddedByClient"),
+            // Expense entity - include Case, Case.Client, and AddedByClient
+            if (entityType == typeof(Expense))
+            {
+                return (IQueryable<T>)((IQueryable<Expense>)query)
+                    .Include(e => e.Case)
+                        .ThenInclude(c => c.Client)
+                    .Include(e => e.AddedByClient);
+            }
 
-                "Appointment" => query
-                    .Include("Case")
-                    .Include("Case.Client"),
+            // Appointment entity - include Case and Case.Client
+            if (entityType == typeof(Appointment))
+            {
+                return (IQueryable<T>)((IQueryable<Appointment>)query)
+                    .Include(a => a.Case)
+                        .ThenInclude(c => c.Client);
+            }
 
-                "Document" => query
-                    .Include("Case")
-                    .Include("Case.Client")
-                    .Include("UploadedByClient"),
+            // Document entity - include Case, Case.Client, and UploadedByClient
+            if (entityType == typeof(Document))
+            {
+                return (IQueryable<T>)((IQueryable<Document>)query)
+                    .Include(d => d.Case)
+                        .ThenInclude(c => c.Client)
+                    .Include(d => d.UploadedByClient);
+            }
 
-                _ => query
-            };
+            // Default - no includes
+            return query;
         }
     }
 }

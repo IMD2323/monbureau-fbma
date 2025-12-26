@@ -47,7 +47,16 @@ namespace MonBureau.Infrastructure.Repositories
         public async Task<int> SaveChangesAsync()
         {
             UpdateTimestamps();
-            return await _context.SaveChangesAsync();
+
+            try
+            {
+                return await _context.SaveChangesAsync();
+            }
+            finally
+            {
+                // CRITICAL FIX: Clear change tracker after save to prevent tracking conflicts
+                ClearChangeTracker();
+            }
         }
 
         public async Task BeginTransactionAsync()
@@ -78,6 +87,9 @@ namespace MonBureau.Infrastructure.Repositories
                     await _transaction.DisposeAsync();
                     _transaction = null;
                 }
+
+                // Clear tracker after transaction
+                ClearChangeTracker();
             }
         }
 
@@ -89,6 +101,26 @@ namespace MonBureau.Infrastructure.Repositories
                 await _transaction.DisposeAsync();
                 _transaction = null;
             }
+
+            // Clear tracker after rollback
+            ClearChangeTracker();
+        }
+
+        /// <summary>
+        /// CRITICAL FIX: Clears all tracked entities to prevent tracking conflicts
+        /// </summary>
+        private void ClearChangeTracker()
+        {
+            var trackedEntries = _context.ChangeTracker.Entries()
+                .Where(e => e.State != EntityState.Detached)
+                .ToList();
+
+            foreach (var entry in trackedEntries)
+            {
+                entry.State = EntityState.Detached;
+            }
+
+            System.Diagnostics.Debug.WriteLine($"[UnitOfWork] Cleared {trackedEntries.Count} tracked entities");
         }
 
         private void UpdateTimestamps()
@@ -110,6 +142,10 @@ namespace MonBureau.Infrastructure.Repositories
         public void Dispose()
         {
             _transaction?.Dispose();
+
+            // Clear tracker before disposing context
+            ClearChangeTracker();
+
             _context?.Dispose();
         }
     }

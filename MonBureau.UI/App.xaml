@@ -27,6 +27,7 @@
 
                     <converters:BoolToVisibilityConverter x:Key="BoolToVis" />
                     <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
+                    <converters:InverseBoolConverter x:Key="InverseBool" />
                     <converters:CaseStatusToStringConverter x:Key="StatusToString" />
                     <converters:ItemTypeToStringConverter x:Key="ItemTypeToString" />
                     <converters:DateFormatConverter x:Key="DateFormat" />

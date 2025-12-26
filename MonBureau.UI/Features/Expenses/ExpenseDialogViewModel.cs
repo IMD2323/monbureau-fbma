@@ -14,7 +14,7 @@ using MonBureau.UI.Services;
 namespace MonBureau.UI.Features.Expenses
 {
     /// <summary>
-    /// FIXED: Complete error handling and proper entity loading
+    /// FINAL FIX: Proper entity loading without tracking conflicts
     /// </summary>
     public partial class ExpenseDialogViewModel : ObservableObject
     {
@@ -83,7 +83,7 @@ namespace MonBureau.UI.Features.Expenses
         }
 
         /// <summary>
-        /// FIXED: Loads cases and clients with proper navigation properties
+        /// FIXED: Loads cases and clients as detached entities to prevent tracking conflicts
         /// </summary>
         private async Task LoadDataAsync(Expense? expense)
         {
@@ -93,7 +93,7 @@ namespace MonBureau.UI.Features.Expenses
 
                 System.Diagnostics.Debug.WriteLine("[ExpenseDialog] Loading cases and clients...");
 
-                // Load cases with client navigation property
+                // Load cases with client navigation property (AsNoTracking ensures no tracking)
                 var casesTask = _unitOfWork.Cases.GetPagedAsync(0, 1000);
                 var clientsTask = _unitOfWork.Clients.GetPagedAsync(0, 1000);
 
@@ -106,8 +106,9 @@ namespace MonBureau.UI.Features.Expenses
 
                 await Application.Current.Dispatcher.InvokeAsync(() =>
                 {
+                    // Store as new collections (detached from context)
                     Cases = new ObservableCollection<Case>(cases.OrderByDescending(c => c.OpeningDate));
-                    Clients = new ObservableCollection<Client>(clients.OrderBy(c => c.FullName));
+                    Clients = new ObservableCollection<Client>(clients.OrderBy(c => c.LastName));
 
                     if (expense != null)
                     {
@@ -142,7 +143,7 @@ namespace MonBureau.UI.Features.Expenses
         }
 
         /// <summary>
-        /// Loads existing expense data into form
+        /// FIXED: Loads existing expense data and matches with detached entities
         /// </summary>
         private void LoadExpenseData(Expense expense)
         {
@@ -154,13 +155,13 @@ namespace MonBureau.UI.Features.Expenses
                 AmountText = expense.Amount.ToString("F2");
                 Date = expense.Date;
                 SelectedCategory = expense.Category;
-                PaymentMethod = expense.PaymentMethod;
+                PaymentMethod = expense.PaymentMethod ?? string.Empty; // FIXED: Ensure not null
                 Recipient = expense.Recipient;
                 Notes = expense.Notes;
                 ReceiptPath = expense.ReceiptPath;
                 IsPaid = expense.IsPaid;
 
-                // Find and select case
+                // FIXED: Find matching case by ID (not by reference)
                 SelectedCase = Cases.FirstOrDefault(c => c.Id == expense.CaseId);
 
                 if (SelectedCase != null)
@@ -172,11 +173,18 @@ namespace MonBureau.UI.Features.Expenses
                     System.Diagnostics.Debug.WriteLine($"[ExpenseDialog] WARNING: Case with ID {expense.CaseId} not found");
                 }
 
-                // Find and select client
+                // FIXED: Find matching client by ID (not by reference)
                 if (expense.AddedByClientId.HasValue)
                 {
                     AddedByClient = Clients.FirstOrDefault(c => c.Id == expense.AddedByClientId.Value);
+
+                    if (AddedByClient != null)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[ExpenseDialog] Selected client: {AddedByClient.FirstName} {AddedByClient.LastName}");
+                    }
                 }
+
+                System.Diagnostics.Debug.WriteLine($"[ExpenseDialog] Payment Method loaded: '{PaymentMethod}'");
             }
             catch (Exception ex)
             {
@@ -237,33 +245,31 @@ namespace MonBureau.UI.Features.Expenses
                 IsLoading = true;
 
                 System.Diagnostics.Debug.WriteLine($"[ExpenseDialog] Saving expense: {Description}, Amount: {amount}, Case: {SelectedCase.Number}");
-
-                Expense expenseToSave;
+                System.Diagnostics.Debug.WriteLine($"[ExpenseDialog] Payment Method: '{PaymentMethod}'");
 
                 if (_existingExpenseId.HasValue)
                 {
-                    // Edit mode - load fresh entity
-                    expenseToSave = await _unitOfWork.Expenses.GetByIdAsync(_existingExpenseId.Value);
-                    if (expenseToSave == null)
+                    // CRITICAL FIX: Create a completely new detached entity for update
+                    System.Diagnostics.Debug.WriteLine($"[ExpenseDialog] Updating existing expense ID: {_existingExpenseId.Value}");
+
+                    var expenseToSave = new Expense
                     {
-                        ValidationError = "Dépense introuvable";
-                        return;
-                    }
-
-                    System.Diagnostics.Debug.WriteLine($"[ExpenseDialog] Updating existing expense ID: {expenseToSave.Id}");
-
-                    // Update properties
-                    expenseToSave.Description = Description;
-                    expenseToSave.Amount = amount;
-                    expenseToSave.Date = Date;
-                    expenseToSave.Category = SelectedCategory;
-                    expenseToSave.PaymentMethod = PaymentMethod;
-                    expenseToSave.Recipient = Recipient;
-                    expenseToSave.Notes = Notes;
-                    expenseToSave.ReceiptPath = ReceiptPath;
-                    expenseToSave.IsPaid = IsPaid;
-                    expenseToSave.CaseId = SelectedCase.Id;
-                    expenseToSave.AddedByClientId = AddedByClient?.Id;
+                        Id = _existingExpenseId.Value,
+                        Description = Description,
+                        Amount = amount,
+                        Date = Date,
+                        Category = SelectedCategory,
+                        PaymentMethod = string.IsNullOrWhiteSpace(PaymentMethod) ? null : PaymentMethod,
+                        Recipient = Recipient,
+                        Notes = Notes,
+                        ReceiptPath = ReceiptPath,
+                        IsPaid = IsPaid,
+                        CaseId = SelectedCase.Id,
+                        AddedByClientId = AddedByClient?.Id,
+                        // Don't set navigation properties
+                        Case = null,
+                        AddedByClient = null
+                    };
 
                     await _unitOfWork.Expenses.UpdateAsync(expenseToSave);
                 }
@@ -272,19 +278,22 @@ namespace MonBureau.UI.Features.Expenses
                     // Create mode
                     System.Diagnostics.Debug.WriteLine("[ExpenseDialog] Creating new expense");
 
-                    expenseToSave = new Expense
+                    var expenseToSave = new Expense
                     {
                         Description = Description,
                         Amount = amount,
                         Date = Date,
                         Category = SelectedCategory,
-                        PaymentMethod = PaymentMethod,
+                        PaymentMethod = string.IsNullOrWhiteSpace(PaymentMethod) ? null : PaymentMethod,
                         Recipient = Recipient,
                         Notes = Notes,
                         ReceiptPath = ReceiptPath,
                         IsPaid = IsPaid,
                         CaseId = SelectedCase.Id,
-                        AddedByClientId = AddedByClient?.Id
+                        AddedByClientId = AddedByClient?.Id,
+                        // Don't set navigation properties
+                        Case = null,
+                        AddedByClient = null
                     };
 
                     await _unitOfWork.Expenses.AddAsync(expenseToSave);
@@ -302,6 +311,13 @@ namespace MonBureau.UI.Features.Expenses
                 var error = ErrorHandler.Handle(ex, "la sauvegarde de la dépense");
                 ValidationError = error.UserMessage;
                 ErrorHandler.ShowDetailedError(error);
+
+                System.Diagnostics.Debug.WriteLine($"[ExpenseDialog] Save error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[ExpenseDialog] Stack trace: {ex.StackTrace}");
+                if (ex.InnerException != null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[ExpenseDialog] Inner exception: {ex.InnerException.Message}");
+                }
             }
             finally
             {

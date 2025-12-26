@@ -28,7 +28,7 @@ namespace MonBureau.UI.Services
     }
 
     /// <summary>
-    /// FIXED: Complete navigation service with all pages
+    /// FIXED: Complete navigation service with all pages including Expenses and Appointments
     /// </summary>
     public class NavigationService : INavigationService
     {
@@ -51,7 +51,6 @@ namespace MonBureau.UI.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[NavigationService] Dashboard navigation error: {ex.Message}");
                 ShowNavigationError("Tableau de Bord", ex);
             }
         }
@@ -72,7 +71,6 @@ namespace MonBureau.UI.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[NavigationService] Clients navigation error: {ex.Message}");
                 ShowNavigationError("Clients", ex);
             }
         }
@@ -93,7 +91,6 @@ namespace MonBureau.UI.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[NavigationService] Cases navigation error: {ex.Message}");
                 ShowNavigationError("Dossiers", ex);
             }
         }
@@ -114,11 +111,13 @@ namespace MonBureau.UI.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[NavigationService] Documents navigation error: {ex.Message}");
                 ShowNavigationError("Documents", ex);
             }
         }
 
+        /// <summary>
+        /// FIXED: Added missing NavigateToExpenses method
+        /// </summary>
         public void NavigateToExpenses()
         {
             System.Diagnostics.Debug.WriteLine("[NavigationService] Navigating to Expenses");
@@ -135,11 +134,13 @@ namespace MonBureau.UI.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[NavigationService] Expenses navigation error: {ex.Message}");
                 ShowNavigationError("Dépenses", ex);
             }
         }
 
+        /// <summary>
+        /// FIXED: Added missing NavigateToAppointments method
+        /// </summary>
         public void NavigateToAppointments()
         {
             System.Diagnostics.Debug.WriteLine("[NavigationService] Navigating to Appointments");
@@ -156,7 +157,6 @@ namespace MonBureau.UI.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[NavigationService] Appointments navigation error: {ex.Message}");
                 ShowNavigationError("Rendez-vous", ex);
             }
         }
@@ -177,7 +177,6 @@ namespace MonBureau.UI.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[NavigationService] Backup navigation error: {ex.Message}");
                 ShowNavigationError("Sauvegarde", ex);
             }
         }
@@ -198,7 +197,6 @@ namespace MonBureau.UI.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[NavigationService] Settings navigation error: {ex.Message}");
                 ShowNavigationError("Paramètres", ex);
             }
         }
@@ -231,6 +229,8 @@ namespace MonBureau.UI.Services
 
         private void ShowNavigationError(string pageName, Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"[NavigationService] ❌ Error navigating to {pageName}: {ex.Message}");
+
             MessageBox.Show(
                 $"Erreur lors de la navigation vers {pageName}:\n\n{ex.Message}\n\nConsultez les logs pour plus de détails.",
                 "Erreur de Navigation",

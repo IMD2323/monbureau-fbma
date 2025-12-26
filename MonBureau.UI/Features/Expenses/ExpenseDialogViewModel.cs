@@ -9,9 +9,13 @@ using Microsoft.Win32;
 using MonBureau.Core.Entities;
 using MonBureau.Core.Enums;
 using MonBureau.Core.Interfaces;
+using MonBureau.UI.Services;
 
 namespace MonBureau.UI.Features.Expenses
 {
+    /// <summary>
+    /// FIXED: Complete error handling and proper entity loading
+    /// </summary>
     public partial class ExpenseDialogViewModel : ObservableObject
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -59,6 +63,9 @@ namespace MonBureau.UI.Features.Expenses
         [ObservableProperty]
         private string? _validationError;
 
+        [ObservableProperty]
+        private bool _isLoading;
+
         public bool IsEditMode => _existingExpenseId.HasValue;
 
         public Array ExpenseCategories => Enum.GetValues(typeof(ExpenseCategory));
@@ -75,11 +82,18 @@ namespace MonBureau.UI.Features.Expenses
             _ = LoadDataAsync(expense);
         }
 
+        /// <summary>
+        /// FIXED: Loads cases and clients with proper navigation properties
+        /// </summary>
         private async Task LoadDataAsync(Expense? expense)
         {
             try
             {
-                // Load cases and clients
+                IsLoading = true;
+
+                System.Diagnostics.Debug.WriteLine("[ExpenseDialog] Loading cases and clients...");
+
+                // Load cases with client navigation property
                 var casesTask = _unitOfWork.Cases.GetPagedAsync(0, 1000);
                 var clientsTask = _unitOfWork.Clients.GetPagedAsync(0, 1000);
 
@@ -87,6 +101,8 @@ namespace MonBureau.UI.Features.Expenses
 
                 var cases = casesTask.Result;
                 var clients = clientsTask.Result;
+
+                System.Diagnostics.Debug.WriteLine($"[ExpenseDialog] Loaded {cases.Count()} cases and {clients.Count()} clients");
 
                 await Application.Current.Dispatcher.InvokeAsync(() =>
                 {
@@ -97,48 +113,98 @@ namespace MonBureau.UI.Features.Expenses
                     {
                         LoadExpenseData(expense);
                     }
+                    else
+                    {
+                        // Set default values for new expense
+                        if (Cases.Any())
+                        {
+                            SelectedCase = Cases.First();
+                        }
+                    }
                 });
+
+                if (Cases.Count == 0)
+                {
+                    ErrorHandler.ShowWarning(
+                        "Aucun dossier disponible.\n\n" +
+                        "Veuillez d'abord créer un dossier avant d'ajouter une dépense.");
+                }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[ExpenseDialog] Error loading data: {ex.Message}");
+                var error = ErrorHandler.Handle(ex, "le chargement des données");
+                ErrorHandler.ShowError(error);
+            }
+            finally
+            {
+                IsLoading = false;
             }
         }
 
+        /// <summary>
+        /// Loads existing expense data into form
+        /// </summary>
         private void LoadExpenseData(Expense expense)
         {
-            Description = expense.Description;
-            AmountText = expense.Amount.ToString("F2");
-            Date = expense.Date;
-            SelectedCategory = expense.Category;
-            PaymentMethod = expense.PaymentMethod;
-            Recipient = expense.Recipient;
-            Notes = expense.Notes;
-            ReceiptPath = expense.ReceiptPath;
-            IsPaid = expense.IsPaid;
-
-            // Find and select case
-            SelectedCase = Cases.FirstOrDefault(c => c.Id == expense.CaseId);
-
-            // Find and select client
-            if (expense.AddedByClientId.HasValue)
+            try
             {
-                AddedByClient = Clients.FirstOrDefault(c => c.Id == expense.AddedByClientId.Value);
+                System.Diagnostics.Debug.WriteLine($"[ExpenseDialog] Loading expense: {expense.Description}");
+
+                Description = expense.Description;
+                AmountText = expense.Amount.ToString("F2");
+                Date = expense.Date;
+                SelectedCategory = expense.Category;
+                PaymentMethod = expense.PaymentMethod;
+                Recipient = expense.Recipient;
+                Notes = expense.Notes;
+                ReceiptPath = expense.ReceiptPath;
+                IsPaid = expense.IsPaid;
+
+                // Find and select case
+                SelectedCase = Cases.FirstOrDefault(c => c.Id == expense.CaseId);
+
+                if (SelectedCase != null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[ExpenseDialog] Selected case: {SelectedCase.Number}");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"[ExpenseDialog] WARNING: Case with ID {expense.CaseId} not found");
+                }
+
+                // Find and select client
+                if (expense.AddedByClientId.HasValue)
+                {
+                    AddedByClient = Clients.FirstOrDefault(c => c.Id == expense.AddedByClientId.Value);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ExpenseDialog] Error loading expense data: {ex.Message}");
             }
         }
 
         [RelayCommand]
         private void BrowseReceipt()
         {
-            var openFileDialog = new OpenFileDialog
+            try
             {
-                Title = "Sélectionner le reçu/facture",
-                Filter = "Images (*.jpg;*.jpeg;*.png)|*.jpg;*.jpeg;*.png|PDF (*.pdf)|*.pdf|Tous les fichiers (*.*)|*.*"
-            };
+                var openFileDialog = new OpenFileDialog
+                {
+                    Title = "Sélectionner le reçu/facture",
+                    Filter = "Images (*.jpg;*.jpeg;*.png)|*.jpg;*.jpeg;*.png|PDF (*.pdf)|*.pdf|Tous les fichiers (*.*)|*.*"
+                };
 
-            if (openFileDialog.ShowDialog() == true)
+                if (openFileDialog.ShowDialog() == true)
+                {
+                    ReceiptPath = openFileDialog.FileName;
+                    System.Diagnostics.Debug.WriteLine($"[ExpenseDialog] Receipt selected: {ReceiptPath}");
+                }
+            }
+            catch (Exception ex)
             {
-                ReceiptPath = openFileDialog.FileName;
+                var error = ErrorHandler.Handle(ex, "la sélection du fichier");
+                ErrorHandler.ShowError(error);
             }
         }
 
@@ -168,6 +234,10 @@ namespace MonBureau.UI.Features.Expenses
 
             try
             {
+                IsLoading = true;
+
+                System.Diagnostics.Debug.WriteLine($"[ExpenseDialog] Saving expense: {Description}, Amount: {amount}, Case: {SelectedCase.Number}");
+
                 Expense expenseToSave;
 
                 if (_existingExpenseId.HasValue)
@@ -179,6 +249,8 @@ namespace MonBureau.UI.Features.Expenses
                         ValidationError = "Dépense introuvable";
                         return;
                     }
+
+                    System.Diagnostics.Debug.WriteLine($"[ExpenseDialog] Updating existing expense ID: {expenseToSave.Id}");
 
                     // Update properties
                     expenseToSave.Description = Description;
@@ -198,6 +270,8 @@ namespace MonBureau.UI.Features.Expenses
                 else
                 {
                     // Create mode
+                    System.Diagnostics.Debug.WriteLine("[ExpenseDialog] Creating new expense");
+
                     expenseToSave = new Expense
                     {
                         Description = Description,
@@ -218,14 +292,20 @@ namespace MonBureau.UI.Features.Expenses
 
                 await _unitOfWork.SaveChangesAsync();
 
+                System.Diagnostics.Debug.WriteLine("[ExpenseDialog] ✅ Expense saved successfully");
+
                 window.DialogResult = true;
                 window.Close();
             }
             catch (Exception ex)
             {
-                ValidationError = $"Erreur: {ex.Message}";
-                System.Diagnostics.Debug.WriteLine($"[ExpenseDialog] Save error: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"[ExpenseDialog] Stack trace: {ex.StackTrace}");
+                var error = ErrorHandler.Handle(ex, "la sauvegarde de la dépense");
+                ValidationError = error.UserMessage;
+                ErrorHandler.ShowDetailedError(error);
+            }
+            finally
+            {
+                IsLoading = false;
             }
         }
 

@@ -14,7 +14,7 @@ using MonBureau.UI.Services;
 namespace MonBureau.UI.Features.Expenses
 {
     /// <summary>
-    /// FINAL FIX: Proper entity loading without tracking conflicts
+    /// FIXED: Ensures PaymentMethod is never null and properly loads detached entities
     /// </summary>
     public partial class ExpenseDialogViewModel : ObservableObject
     {
@@ -34,7 +34,7 @@ namespace MonBureau.UI.Features.Expenses
         private ExpenseCategory _selectedCategory;
 
         [ObservableProperty]
-        private string? _paymentMethod;
+        private string _paymentMethod = string.Empty; // FIXED: Never null
 
         [ObservableProperty]
         private string? _recipient;
@@ -82,9 +82,6 @@ namespace MonBureau.UI.Features.Expenses
             _ = LoadDataAsync(expense);
         }
 
-        /// <summary>
-        /// FIXED: Loads cases and clients as detached entities to prevent tracking conflicts
-        /// </summary>
         private async Task LoadDataAsync(Expense? expense)
         {
             try
@@ -93,7 +90,7 @@ namespace MonBureau.UI.Features.Expenses
 
                 System.Diagnostics.Debug.WriteLine("[ExpenseDialog] Loading cases and clients...");
 
-                // Load cases with client navigation property (AsNoTracking ensures no tracking)
+                // Load cases and clients as detached entities (AsNoTracking)
                 var casesTask = _unitOfWork.Cases.GetPagedAsync(0, 1000);
                 var clientsTask = _unitOfWork.Clients.GetPagedAsync(0, 1000);
 
@@ -106,7 +103,6 @@ namespace MonBureau.UI.Features.Expenses
 
                 await Application.Current.Dispatcher.InvokeAsync(() =>
                 {
-                    // Store as new collections (detached from context)
                     Cases = new ObservableCollection<Case>(cases.OrderByDescending(c => c.OpeningDate));
                     Clients = new ObservableCollection<Client>(clients.OrderBy(c => c.LastName));
 
@@ -143,7 +139,7 @@ namespace MonBureau.UI.Features.Expenses
         }
 
         /// <summary>
-        /// FIXED: Loads existing expense data and matches with detached entities
+        /// FIXED: Ensures PaymentMethod is never null
         /// </summary>
         private void LoadExpenseData(Expense expense)
         {
@@ -155,7 +151,10 @@ namespace MonBureau.UI.Features.Expenses
                 AmountText = expense.Amount.ToString("F2");
                 Date = expense.Date;
                 SelectedCategory = expense.Category;
-                PaymentMethod = expense.PaymentMethod ?? string.Empty; // FIXED: Ensure not null
+
+                // FIXED: Ensure PaymentMethod is never null for binding
+                PaymentMethod = expense.PaymentMethod ?? string.Empty;
+
                 Recipient = expense.Recipient;
                 Notes = expense.Notes;
                 ReceiptPath = expense.ReceiptPath;
@@ -249,7 +248,7 @@ namespace MonBureau.UI.Features.Expenses
 
                 if (_existingExpenseId.HasValue)
                 {
-                    // CRITICAL FIX: Create a completely new detached entity for update
+                    // Update mode - create detached entity
                     System.Diagnostics.Debug.WriteLine($"[ExpenseDialog] Updating existing expense ID: {_existingExpenseId.Value}");
 
                     var expenseToSave = new Expense

@@ -7,7 +7,7 @@ using MonBureau.UI.ViewModels;
 namespace MonBureau.UI.Views
 {
     /// <summary>
-    /// MainWindow - FIXED with complete navigation including Expenses and Appointments
+    /// FIXED: Proper page disposal - only disposes if it's a different page
     /// </summary>
     public partial class MainWindow : Window, IDisposable
     {
@@ -58,6 +58,9 @@ namespace MonBureau.UI.Views
             Dispose();
         }
 
+        /// <summary>
+        /// FIXED: Only dispose if it's a different page
+        /// </summary>
         private void OnNavigated(object? sender, System.Windows.Controls.Page page)
         {
             if (_disposed)
@@ -68,12 +71,13 @@ namespace MonBureau.UI.Views
 
             try
             {
-                // FIXED: Dispose previous page properly
-                if (MainContent.Content is IDisposable disposablePage && MainContent.Content != page)
+                // FIXED: Only dispose if it's a different page
+                var currentPage = MainContent.Content as System.Windows.Controls.Page;
+
+                if (currentPage != null && currentPage != page && currentPage is IDisposable disposablePage)
                 {
                     System.Diagnostics.Debug.WriteLine($"[MainWindow] Disposing previous page: {disposablePage.GetType().Name}");
 
-                    // Use Dispatcher to ensure thread safety
                     Dispatcher.Invoke(() =>
                     {
                         disposablePage.Dispose();
@@ -87,7 +91,6 @@ namespace MonBureau.UI.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[MainWindow] Navigation error: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"[MainWindow] StackTrace: {ex.StackTrace}");
             }
         }
 
@@ -137,7 +140,7 @@ namespace MonBureau.UI.Views
 
         #endregion
 
-        #region Navigation Events - FIXED
+        #region Navigation Events
 
         private void NavigateToDashboard_Click(object sender, RoutedEventArgs e)
         {
@@ -167,7 +170,6 @@ namespace MonBureau.UI.Views
             HighlightButton(DocumentsButton);
         }
 
-        // FIXED: Added missing navigation methods
         private void NavigateToExpenses_Click(object sender, RoutedEventArgs e)
         {
             System.Diagnostics.Debug.WriteLine("[MainWindow] Navigate to Expenses clicked");

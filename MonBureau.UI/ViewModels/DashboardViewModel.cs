@@ -19,12 +19,11 @@ using MonBureau.UI.Features.Expenses;
 using MonBureau.UI.Features.Rdvs;
 using MonBureau.UI.Features.Documents;
 
-
 namespace MonBureau.UI.ViewModels
 {
     /// <summary>
-    /// FIXED: Uses DbContextFactory to prevent concurrent access issues
-    /// Each operation gets its own DbContext instance
+    /// FIXED: Proper disposal of CancellationTokenSource to prevent memory leaks
+    /// Uses DbContextFactory to prevent concurrent access issues
     /// </summary>
     public partial class DashboardViewModel : ObservableObject, IDisposable
     {
@@ -73,6 +72,9 @@ namespace MonBureau.UI.ViewModels
             System.Diagnostics.Debug.WriteLine("[DashboardViewModel] Created");
         }
 
+        /// <summary>
+        /// FIXED: Properly disposes previous cancellation token before creating new one
+        /// </summary>
         public async Task LoadDataAsync()
         {
             if (_disposed)
@@ -81,8 +83,20 @@ namespace MonBureau.UI.ViewModels
                 return;
             }
 
-            _loadCancellation?.Cancel();
-            _loadCancellation?.Dispose();
+            // FIXED: Properly dispose previous cancellation token
+            try
+            {
+                _loadCancellation?.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Ignore - already disposed
+            }
+            finally
+            {
+                _loadCancellation?.Dispose();
+            }
+
             _loadCancellation = new CancellationTokenSource();
             var ct = _loadCancellation.Token;
 
@@ -122,9 +136,6 @@ namespace MonBureau.UI.ViewModels
             }
         }
 
-        /// <summary>
-        /// FIXED: Uses separate DbContext for statistics
-        /// </summary>
         private async Task LoadStatisticsAsync(CancellationToken ct)
         {
             if (_cache.Get<DashboardStatistics>(StatsCacheKey) is { } cached)
@@ -160,9 +171,6 @@ namespace MonBureau.UI.ViewModels
             }, TimeSpan.FromMinutes(2));
         }
 
-        /// <summary>
-        /// FIXED: Uses separate DbContext
-        /// </summary>
         private async Task LoadRecentClientsAsync(CancellationToken ct)
         {
             await using var context = await _contextFactory.CreateDbContextAsync(ct);
@@ -181,9 +189,6 @@ namespace MonBureau.UI.ViewModels
             }, System.Windows.Threading.DispatcherPriority.Background, ct);
         }
 
-        /// <summary>
-        /// FIXED: Uses separate DbContext
-        /// </summary>
         private async Task LoadRecentCasesAsync(CancellationToken ct)
         {
             await using var context = await _contextFactory.CreateDbContextAsync(ct);
@@ -203,9 +208,6 @@ namespace MonBureau.UI.ViewModels
             }, System.Windows.Threading.DispatcherPriority.Background, ct);
         }
 
-        /// <summary>
-        /// FIXED: Uses separate DbContext
-        /// </summary>
         private async Task LoadRecentItemsAsync(CancellationToken ct)
         {
             await using var context = await _contextFactory.CreateDbContextAsync(ct);
@@ -447,9 +449,6 @@ namespace MonBureau.UI.ViewModels
             }
         }
 
-        /// <summary>
-        /// FIXED: Search uses separate DbContext
-        /// </summary>
         [RelayCommand]
         private async Task Search()
         {
@@ -459,8 +458,20 @@ namespace MonBureau.UI.ViewModels
                 return;
             }
 
-            _loadCancellation?.Cancel();
-            _loadCancellation?.Dispose();
+            // FIXED: Cancel and dispose previous operation
+            try
+            {
+                _loadCancellation?.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Ignore
+            }
+            finally
+            {
+                _loadCancellation?.Dispose();
+            }
+
             _loadCancellation = new CancellationTokenSource();
             var ct = _loadCancellation.Token;
 
@@ -532,9 +543,19 @@ namespace MonBureau.UI.ViewModels
 
             if (_loadCancellation != null)
             {
-                _loadCancellation.Cancel();
-                _loadCancellation.Dispose();
-                _loadCancellation = null;
+                try
+                {
+                    _loadCancellation.Cancel();
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Already disposed
+                }
+                finally
+                {
+                    _loadCancellation.Dispose();
+                    _loadCancellation = null;
+                }
             }
 
             RecentClients.Clear();

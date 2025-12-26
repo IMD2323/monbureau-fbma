@@ -12,7 +12,7 @@ using MonBureau.UI.Services;
 namespace MonBureau.UI.ViewModels.Base
 {
     /// <summary>
-    /// FIXED: Complete error handling for all CRUD operations
+    /// FIXED: Proper cancellation token disposal to prevent race conditions
     /// </summary>
     public abstract partial class CrudViewModelBase<TEntity> : ViewModelBase, IDisposable
         where TEntity : class
@@ -51,9 +51,19 @@ namespace MonBureau.UI.ViewModels.Base
         {
             if (_disposed) return;
 
-            _loadCancellation?.Cancel();
-            _loadCancellation?.Dispose();
-            _loadCancellation = null;
+            try
+            {
+                _loadCancellation?.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Already disposed
+            }
+            finally
+            {
+                _loadCancellation?.Dispose();
+                _loadCancellation = null;
+            }
 
             Items.Clear();
 
@@ -65,7 +75,20 @@ namespace MonBureau.UI.ViewModels.Base
         {
             if (_disposed) return;
 
-            _loadCancellation?.Cancel();
+            // FIXED: Cancel and dispose previous operation
+            try
+            {
+                _loadCancellation?.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Ignore
+            }
+            finally
+            {
+                _loadCancellation?.Dispose();
+            }
+
             _loadCancellation = new CancellationTokenSource();
 
             IsBusy = true;
@@ -120,16 +143,55 @@ namespace MonBureau.UI.ViewModels.Base
             });
         }
 
+        /// <summary>
+        /// FIXED: Properly cancels and disposes previous load before starting new one
+        /// </summary>
         partial void OnSearchFilterChanged(string value)
         {
+            if (_disposed) return;
+
+            // FIXED: Cancel any ongoing load before starting new one
+            try
+            {
+                _loadCancellation?.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Ignore
+            }
+            finally
+            {
+                _loadCancellation?.Dispose();
+            }
+
+            _loadCancellation = new CancellationTokenSource();
+
             CurrentPage = 1;
-            _ = SafeExecuteAsync(async () => await LoadPageAsync(new CancellationToken()),
+            _ = SafeExecuteAsync(async () => await LoadPageAsync(_loadCancellation.Token),
                 "la recherche");
         }
 
         partial void OnCurrentPageChanged(int value)
         {
-            _ = SafeExecuteAsync(async () => await LoadPageAsync(new CancellationToken()),
+            if (_disposed) return;
+
+            // FIXED: Cancel any ongoing load before starting new one
+            try
+            {
+                _loadCancellation?.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Ignore
+            }
+            finally
+            {
+                _loadCancellation?.Dispose();
+            }
+
+            _loadCancellation = new CancellationTokenSource();
+
+            _ = SafeExecuteAsync(async () => await LoadPageAsync(_loadCancellation.Token),
                 "le changement de page");
         }
 

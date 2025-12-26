@@ -1,4 +1,9 @@
-﻿<Page
+﻿<!--
+============================================================================
+ExpensesPage.xaml - FINAL FIX: Client FullName Display
+============================================================================
+-->
+<Page
     x:Class="MonBureau.UI.Views.Pages.ExpensesPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -333,7 +338,7 @@
                     </Grid>
                 </Border>
 
-                <!--  Expenses List  -->
+                <!--  Expenses List - FINAL FIX: Proper Client Display  -->
                 <Border
                     Padding="24"
                     Background="White"
@@ -380,7 +385,7 @@
                                                 Text="💰" />
                                         </Border>
 
-                                        <!--  Info  -->
+                                        <!--  Info - FINAL FIX: Proper Case and Client Display  -->
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                             <TextBlock
                                                 FontSize="15"
@@ -388,25 +393,43 @@
                                                 Foreground="{StaticResource TextPrimaryBrush}"
                                                 Text="{Binding Description}"
                                                 TextTrimming="CharacterEllipsis" />
+
                                             <StackPanel Margin="0,4,0,0" Orientation="Horizontal">
+                                                <!-- FIXED: Case Number Display -->
                                                 <TextBlock
                                                     Margin="0,0,16,0"
                                                     FontSize="13"
                                                     Foreground="{StaticResource TextSecondaryBrush}">
                                                     <Run Text="Dossier:" />
-                                                    <Run FontWeight="Medium" Text="{Binding Case.Number, Mode=OneWay}" />
+                                                    <Run FontWeight="Medium">
+                                                        <Run.Text>
+                                                            <MultiBinding StringFormat="{}{0}">
+                                                                <Binding Path="Case.Number" FallbackValue="N/A" />
+                                                            </MultiBinding>
+                                                        </Run.Text>
+                                                    </Run>
                                                 </TextBlock>
+
                                                 <TextBlock
                                                     FontSize="12"
                                                     Foreground="{StaticResource TextTertiaryBrush}"
                                                     Text="{Binding Date, Converter={StaticResource DateFormat}, ConverterParameter='dd/MM/yyyy'}" />
                                             </StackPanel>
+
+                                            <!-- FINAL FIX: Client FullName Display with MultiBinding -->
                                             <TextBlock
                                                 Margin="0,4,0,0"
                                                 FontSize="12"
                                                 Foreground="{StaticResource TextTertiaryBrush}">
                                                 <Run Text="Client:" />
-                                                <Run Text="{Binding Case.Client.FullName, Mode=OneWay}" />
+                                                <Run>
+                                                    <Run.Text>
+                                                        <MultiBinding StringFormat="{}{0} {1}">
+                                                            <Binding Path="Case.Client.FirstName" FallbackValue="" />
+                                                            <Binding Path="Case.Client.LastName" FallbackValue="" />
+                                                        </MultiBinding>
+                                                    </Run.Text>
+                                                </Run>
                                             </TextBlock>
                                         </StackPanel>
 

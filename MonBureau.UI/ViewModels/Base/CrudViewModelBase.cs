@@ -11,11 +11,8 @@ using MonBureau.UI.Services;
 
 namespace MonBureau.UI.ViewModels.Base
 {
-    /// <summary>
-    /// FIXED: Proper cancellation token disposal to prevent race conditions
-    /// </summary>
     public abstract partial class CrudViewModelBase<TEntity> : ViewModelBase, IDisposable
-        where TEntity : class
+        where TEntity : class, new()
     {
         protected readonly IUnitOfWork _unitOfWork;
         private CancellationTokenSource? _loadCancellation;
@@ -55,10 +52,7 @@ namespace MonBureau.UI.ViewModels.Base
             {
                 _loadCancellation?.Cancel();
             }
-            catch (ObjectDisposedException)
-            {
-                // Already disposed
-            }
+            catch { }
             finally
             {
                 _loadCancellation?.Dispose();
@@ -66,7 +60,6 @@ namespace MonBureau.UI.ViewModels.Base
             }
 
             Items.Clear();
-
             _disposed = true;
             GC.SuppressFinalize(this);
         }
@@ -75,20 +68,8 @@ namespace MonBureau.UI.ViewModels.Base
         {
             if (_disposed) return;
 
-            // FIXED: Cancel and dispose previous operation
-            try
-            {
-                _loadCancellation?.Cancel();
-            }
-            catch (ObjectDisposedException)
-            {
-                // Ignore
-            }
-            finally
-            {
-                _loadCancellation?.Dispose();
-            }
-
+            _loadCancellation?.Cancel();
+            _loadCancellation?.Dispose();
             _loadCancellation = new CancellationTokenSource();
 
             IsBusy = true;
@@ -108,7 +89,6 @@ namespace MonBureau.UI.ViewModels.Base
             {
                 var error = ErrorHandler.Handle(ex, $"le chargement des {GetEntityPluralName()}");
                 ErrorHandler.ShowError(error);
-                StatusMessage = "Erreur de chargement";
             }
             finally
             {
@@ -124,12 +104,11 @@ namespace MonBureau.UI.ViewModels.Base
             TotalPages = (int)Math.Ceiling((double)TotalItems / PageSize);
 
             if (CurrentPage > TotalPages && TotalPages > 0)
-            {
                 CurrentPage = TotalPages;
-            }
 
             var skip = (CurrentPage - 1) * PageSize;
-            var pageData = await GetRepository().GetPagedAsync(skip, PageSize, filterExpression);
+            var pageData = await GetRepository()
+                .GetPagedAsync(skip, PageSize, filterExpression);
 
             if (ct.IsCancellationRequested) return;
 
@@ -137,37 +116,21 @@ namespace MonBureau.UI.ViewModels.Base
             {
                 Items.Clear();
                 foreach (var item in pageData)
-                {
                     Items.Add(item);
-                }
             });
         }
 
-        /// <summary>
-        /// FIXED: Properly cancels and disposes previous load before starting new one
-        /// </summary>
         partial void OnSearchFilterChanged(string value)
         {
             if (_disposed) return;
 
-            // FIXED: Cancel any ongoing load before starting new one
-            try
-            {
-                _loadCancellation?.Cancel();
-            }
-            catch (ObjectDisposedException)
-            {
-                // Ignore
-            }
-            finally
-            {
-                _loadCancellation?.Dispose();
-            }
-
+            _loadCancellation?.Cancel();
+            _loadCancellation?.Dispose();
             _loadCancellation = new CancellationTokenSource();
 
             CurrentPage = 1;
-            _ = SafeExecuteAsync(async () => await LoadPageAsync(_loadCancellation.Token),
+            _ = SafeExecuteAsync(
+                () => LoadPageAsync(_loadCancellation.Token),
                 "la recherche");
         }
 
@@ -175,23 +138,12 @@ namespace MonBureau.UI.ViewModels.Base
         {
             if (_disposed) return;
 
-            // FIXED: Cancel any ongoing load before starting new one
-            try
-            {
-                _loadCancellation?.Cancel();
-            }
-            catch (ObjectDisposedException)
-            {
-                // Ignore
-            }
-            finally
-            {
-                _loadCancellation?.Dispose();
-            }
-
+            _loadCancellation?.Cancel();
+            _loadCancellation?.Dispose();
             _loadCancellation = new CancellationTokenSource();
 
-            _ = SafeExecuteAsync(async () => await LoadPageAsync(_loadCancellation.Token),
+            _ = SafeExecuteAsync(
+                () => LoadPageAsync(_loadCancellation.Token),
                 "le changement de page");
         }
 
@@ -205,13 +157,10 @@ namespace MonBureau.UI.ViewModels.Base
             await SafeExecuteAsync(async () =>
             {
                 var dialog = CreateAddDialog();
-                var result = ShowDialog(dialog);
-
-                if (result == true)
+                if (ShowDialog(dialog) == true)
                 {
                     await RefreshAsync();
                     ErrorHandler.ShowSuccess($"{GetEntityName()} ajouté avec succès!");
-                    StatusMessage = $"{GetEntityName()} ajouté";
                 }
             }, $"l'ajout de {GetEntityName()}");
         }
@@ -224,17 +173,17 @@ namespace MonBureau.UI.ViewModels.Base
             await SafeExecuteAsync(async () =>
             {
                 var dialog = CreateEditDialog(entity);
-                var result = ShowDialog(dialog);
-
-                if (result == true)
+                if (ShowDialog(dialog) == true)
                 {
                     await RefreshAsync();
                     ErrorHandler.ShowSuccess($"{GetEntityName()} modifié avec succès!");
-                    StatusMessage = $"{GetEntityName()} modifié";
                 }
             }, $"la modification de {GetEntityName()}");
         }
 
+        // =======================
+        // ✅ FIXED DELETE LOGIC
+        // =======================
         [RelayCommand]
         protected virtual async Task DeleteAsync(TEntity? entity)
         {
@@ -242,42 +191,31 @@ namespace MonBureau.UI.ViewModels.Base
 
             var displayName = GetEntityDisplayName(entity);
 
-            var confirmed = ErrorHandler.Confirm(
-                $"Êtes-vous sûr de vouloir supprimer {displayName}?\n\n" +
-                "Cette action est irréversible.",
-                "Confirmer la suppression");
-
-            if (!confirmed) return;
+            if (!ErrorHandler.Confirm(
+                $"Êtes-vous sûr de vouloir supprimer {displayName}?\n\nCette action est irréversible.",
+                "Confirmer la suppression"))
+                return;
 
             await SafeExecuteAsync(async () =>
             {
                 IsBusy = true;
                 BusyMessage = "Suppression en cours...";
 
-                // Get the entity ID
-                var idProperty = typeof(TEntity).GetProperty("Id");
-                var entityId = (int)(idProperty?.GetValue(entity) ?? 0);
+                var idProp = typeof(TEntity).GetProperty("Id");
+                if (idProp == null) return;
 
-                if (entityId > 0)
-                {
-                    // Load fresh entity from database to avoid tracking conflicts
-                    var entityToDelete = await GetRepository().GetByIdAsync(entityId);
+                var entityId = (int)(idProp.GetValue(entity) ?? 0);
+                if (entityId <= 0) return;
 
-                    if (entityToDelete != null)
-                    {
-                        await GetRepository().DeleteAsync(entityToDelete);
-                        await _unitOfWork.SaveChangesAsync();
-                        await RefreshAsync();
+                // 🔒 DETACHED ENTITY (ID ONLY)
+                var entityToDelete = new TEntity();
+                idProp.SetValue(entityToDelete, entityId);
 
-                        ErrorHandler.ShowSuccess($"{GetEntityName()} supprimé avec succès!");
-                        StatusMessage = $"{GetEntityName()} supprimé";
-                    }
-                    else
-                    {
-                        ErrorHandler.ShowWarning("Élément introuvable. Il a peut-être déjà été supprimé.");
-                        await RefreshAsync();
-                    }
-                }
+                await GetRepository().DeleteAsync(entityToDelete);
+                await _unitOfWork.SaveChangesAsync();
+
+                await RefreshAsync();
+                ErrorHandler.ShowSuccess($"{GetEntityName()} supprimé avec succès!");
             }, $"la suppression de {GetEntityName()}");
         }
 
@@ -289,22 +227,19 @@ namespace MonBureau.UI.ViewModels.Base
         }
 
         [RelayCommand]
-        protected virtual void NextPage()
+        protected void NextPage()
         {
             if (CurrentPage < TotalPages)
                 CurrentPage++;
         }
 
         [RelayCommand]
-        protected virtual void PreviousPage()
+        protected void PreviousPage()
         {
             if (CurrentPage > 1)
                 CurrentPage--;
         }
 
-        /// <summary>
-        /// Safe execution wrapper with error handling
-        /// </summary>
         protected async Task SafeExecuteAsync(Func<Task> action, string operationName)
         {
             if (_disposed) return;
